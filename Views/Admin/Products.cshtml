@@ -1,0 +1,151 @@
+@model IEnumerable<Assignment_NET201.Models.Product>
+
+@{
+    ViewData["Title"] = "Products";
+    Layout = "_AdminLayout";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-1" style="color: #1e293b;">Products Management</h3>
+        <p class="text-secondary mb-0" style="font-size: 0.9rem;">Manage your store's inventory and catalog</p>
+    </div>
+    <a asp-action="CreateProduct" class="btn btn-primary shadow-sm hover-up">
+        <i class="fas fa-plus me-2"></i>Add New Product
+    </a>
+</div>
+
+<div class="glass-card border-0">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-premium align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Product Info</th>
+                        <th>Category</th>
+                        <th>Price</th>
+                        <th>Quantity</th>
+                        <th>Status</th>
+                        <th class="text-end pe-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td class="ps-4">
+                                <div class="d-flex align-items-center">
+                                    <div class="position-relative">
+                                        @if (!string.IsNullOrEmpty(item.ImageUrl))
+                                        {
+                                            <img src="@item.ImageUrl" class="rounded-3 object-fit-cover shadow-sm" width="56"
+                                                height="56" alt="@item.Name" style="border: 2px solid #fff;">
+                                        }
+                                        else
+                                        {
+                                            <div class="bg-light rounded-3 d-flex align-items-center justify-content-center shadow-sm"
+                                                style="width: 56px; height: 56px; border: 2px solid #fff;">
+                                                <i class="fas fa-image text-secondary opacity-50"></i>
+                                            </div>
+                                        }
+                                    </div>
+                                    <div class="ms-3">
+                                        <div class="fw-bold text-dark mb-1">@item.Name</div>
+                                        <small class="text-muted d-block text-truncate"
+                                            style="max-width: 280px; font-size: 0.8rem;">
+                                            @item.Description
+                                        </small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-white text-dark border shadow-sm px-3 py-2 rounded-pill fw-normal">
+                                    <i class="fas fa-tag me-1 text-secondary" style="font-size: 0.75rem;"></i>
+                                    @item.Category?.Name
+                                </span>
+                            </td>
+                            <td class="fw-bold text-primary">@item.Price.ToString("N0") ₫</td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="progress flex-grow-1 me-2"
+                                        style="height: 6px; width: 60px; background-color: #e2e8f0;">
+                                        <div class="progress-bar @(item.Quantity < 10 ? "bg-danger" : "bg-success")"
+                                            role="progressbar" style="width: @Math.Min(item.Quantity, 100)%"></div>
+                                    </div>
+                                    <span class="small fw-bold text-secondary">@item.Quantity</span>
+                                </div>
+                            </td>
+                            <td>
+                                @if (item.IsActive)
+                                {
+                                    <span class="badge badge-premium badge-success-modern">
+                                        <i class="fas fa-check-circle me-1"></i> Active
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-premium badge-danger-modern">
+                                        <i class="fas fa-times-circle me-1"></i> Inactive
+                                    </span>
+                                }
+                            </td>
+                            <td class="text-end pe-4">
+                                <div class="btn-group">
+                                    <a asp-action="EditProduct" asp-route-id="@item.Id"
+                                        class="btn btn-light btn-sm text-secondary me-1" title="Edit">
+                                        <i class="fas fa-pen"></i>
+                                    </a>
+                                    @if (item.IsActive)
+                                    {
+                                        <button type="button" class="btn btn-light btn-sm text-warning" data-bs-toggle="modal"
+                                            data-bs-target="#toggleModal-@item.Id" title="Hide Product">
+                                            <i class="fas fa-eye-slash"></i>
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button type="button" class="btn btn-light btn-sm text-success" data-bs-toggle="modal"
+                                            data-bs-target="#toggleModal-@item.Id" title="Show Product">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@foreach (var item in Model)
+{
+    <!-- Toggle Status Modal -->
+    <div class="modal fade" id="toggleModal-@item.Id" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold">Confirm Action</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center py-4">
+                    <div class="mb-3">
+                        <i class="fas @(item.IsActive ? "fa-eye-slash text-warning" : "fa-eye text-success") fa-3x"></i>
+                    </div>
+                    <p class="mb-0 text-secondary">Are you sure you want to @(item.IsActive ? "hide" : "show")</p>
+                    <h5 class="fw-bold mt-2">@item.Name</h5>
+                </div>
+                <div class="modal-footer border-0 pt-0 justify-content-center pb-4">
+                    <button type="button" class="btn btn-light px-4 rounded-3" data-bs-dismiss="modal">Cancel</button>
+                    <form asp-action="ToggleProductStatus" asp-route-id="@item.Id" method="post" class="d-inline">
+                        <button type="submit"
+                            class="btn @(item.IsActive ? "btn-warning" : "btn-success") px-4 rounded-3 text-white">
+                            @(item.IsActive ? "Hide Product" : "Show Product")
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+}

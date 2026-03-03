@@ -1,0 +1,298 @@
+@model IEnumerable<Assignment_NET201.Models.ProductVariant>
+@{
+    var product = ViewBag.Product as Assignment_NET201.Models.Product;
+    ViewData["Title"] = $"Variants for {product?.Name}";
+    Layout = "_AdminLayout";
+}
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-action="Inventory">Inventory</a></li>
+        <li class="breadcrumb-item active">@product?.Name</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold mb-0">@product?.Name - Variants</h3>
+    <a asp-action="CreateVariant" asp-route-productId="@product?.Id" class="btn btn-dark">
+        <i class="fas fa-plus me-2"></i>Add Variant
+    </a>
+</div>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="row align-items-start" style="overflow-x: auto; flex-wrap: nowrap; padding-bottom: 1rem;">
+    @{
+        // Order logic for standard sizes
+        var sizeOrder = new Dictionary<string, int> { { "S", 1 }, { "M", 2 }, { "L", 3 }, { "XL", 4 }, { "XXL", 5 } };
+        var groupedVariants = Model.GroupBy(v => v.Size)
+            .OrderBy(g => sizeOrder.ContainsKey(g.Key) ? sizeOrder[g.Key] : 99)
+            .ThenBy(g => g.Key)
+            .ToList();
+    }
+
+    @if (!groupedVariants.Any())
+    {
+        <div class="col-12 text-center py-5 text-muted">
+            <i class="fas fa-box-open fa-3x mb-3"></i>
+            <p>Sản phẩm này chưa có biến thể nào.</p>
+        </div>
+    }
+
+    @foreach (var group in groupedVariants)
+    {
+        <div class="col-11 col-sm-8 col-md-6 col-lg-4 col-xl-3 mb-4 flex-shrink-0">
+            <div class="card bg-light border-0">
+                <div class="card-header bg-dark text-white text-center py-3">
+                    <h5 class="mb-0 fw-bold text-white">Size: @group.Key</h5>
+                </div>
+                <div class="card-body p-2 d-flex flex-column gap-3">
+                    @foreach (var variant in group.OrderBy(v => v.Color))
+                    {
+                        var isLocked = variant.IsLocked;
+                        var bgColor = isLocked ? "bg-white opacity-50" : "bg-white";
+
+                        <div class="card border border-secondary shadow-sm @bgColor">
+                            <div class="card-body p-3">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <img src="@(string.IsNullOrEmpty(variant.ImageUrl) ? product?.ImageUrl : variant.ImageUrl)" 
+                                             class="img-thumbnail" style="width: 50px; height: 50px; object-fit: cover;" alt="Variant Image" />
+                                        <div>
+                                            <div class="d-flex align-items-center gap-2 mb-1">
+                                                <span style="display:inline-block; width: 18px; height: 18px; border-radius: 50%; background-color: @variant.Color; border: 1px solid #ccc; box-shadow: 0 1px 3px rgba(0,0,0,0.2)" title="@variant.Color"></span>
+                                                <span class="fw-bold small text-uppercase">@variant.Color</span>
+                                            </div>
+                                            <small class="text-muted d-block">Lượng tồn: <span class="fw-bold @(variant.Quantity == 0 || isLocked ? "text-danger" : "text-success")">@variant.Quantity</span></small>
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        @if (isLocked)
+                                        {
+                                            <span class="badge bg-danger mb-1"><i class="fas fa-lock"></i> Đã Khóa</span>
+                                        }
+                                        else if (variant.PriceOverride.HasValue)
+                                        {
+                                            <span class="badge bg-warning text-dark mb-1">@variant.PriceOverride.Value.ToString("N0") đ</span>
+                                        }
+                                    </div>
+                                </div>
+
+                                <div class="mt-3">
+                                    <div class="d-flex gap-1 mb-2">
+                                        <button type="button" class="btn btn-sm btn-outline-success flex-grow-1" data-bs-toggle="modal" data-bs-target="#importModal-@variant.Id" @(isLocked ? "disabled" : "")>
+                                            <i class="fas fa-plus"></i> Nhập
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-danger flex-grow-1" data-bs-toggle="modal" data-bs-target="#exportModal-@variant.Id" @(isLocked || variant.Quantity == 0 ? "disabled" : "")>
+                                            <i class="fas fa-minus"></i> Xuất
+                                        </button>
+                                    </div>
+                                    
+                                    <div class="d-flex gap-1">
+                                        <a asp-action="EditVariant" asp-route-id="@variant.Id" class="btn btn-sm btn-secondary flex-grow-1">
+                                            <i class="fas fa-edit"></i> Sửa
+                                        </a>
+                                        <form asp-action="ToggleVariantLock" asp-route-id="@variant.Id" method="post" class="flex-grow-1">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-sm @(isLocked ? "btn-success" : "btn-warning") w-100">
+                                                <i class="fas @(isLocked ? "fa-unlock" : "fa-lock")"></i> @(isLocked ? "Mở Khóa" : "Khóa")
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@foreach (var group in groupedVariants)
+{
+    foreach (var variant in group)
+    {
+        <!-- Import Modal -->
+        <div class="modal fade" id="importModal-@variant.Id" tabindex="-1">
+            <div class="modal-dialog">
+                <form asp-action="ImportStock" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="variantId" value="@variant.Id" />
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Nhập kho - Size @variant.Size</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label class="form-label">Chọn Màu (Sẽ tự tạo mới phân loại nếu khác màu hiện tại)</label>
+                                <div class="input-group mb-1">
+                                    <select class="form-select" id="colorSelect-@variant.Id" onchange="toggleCustomColor(@variant.Id)">
+                                        <option value="#FF0000" style="background-color: #FF0000; color: white;">Đỏ</option>
+                                        <option value="#FF4500" style="background-color: #FF4500; color: white;">Đỏ cam</option>
+                                        <option value="#FF8C00" style="background-color: #FF8C00; color: white;">Cam</option>
+                                        <option value="#FFA500" style="background-color: #FFA500; color: black;">Vàng cam</option>
+                                        <option value="#FFD700" style="background-color: #FFD700; color: black;">Vàng</option>
+                                        <option value="#9ACD32" style="background-color: #9ACD32; color: black;">Vàng xanh</option>
+                                        <option value="#008000" style="background-color: #008000; color: white;">Xanh lá</option>
+                                        <option value="#00FFFF" style="background-color: #00FFFF; color: black;">Xanh lơ</option>
+                                        <option value="#0000FF" style="background-color: #0000FF; color: white;">Xanh dương</option>
+                                        <option value="#4B0082" style="background-color: #4B0082; color: white;">Xanh tím</option>
+                                        <option value="#800080" style="background-color: #800080; color: white;">Tím</option>
+                                        <option value="#C71585" style="background-color: #C71585; color: white;">Đỏ tím</option>
+                                        <option value="#000000" style="background-color: #000000; color: white;">Đen</option>
+                                        <option value="#FFFFFF" style="background-color: #FFFFFF; color: black;">Trắng</option>
+                                        <option value="#808080" style="background-color: #808080; color: white;">Xám</option>
+                                        <option value="Other">Khác (Chọn tùy ý)...</option>
+                                    </select>
+                                </div>
+                                <div style="position: relative; z-index: 9999;">
+                                    <input type="color" class="form-control form-control-color mb-1" id="customColorInput-@variant.Id" title="Chọn màu khác" value="@variant.Color" style="display:none; max-width: 60px;" />
+                                </div>
+                                <span class="text-muted small">Màu hiện tại: <span class="fw-bold" style="color: @variant.Color;">@variant.Color</span></span>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Số lượng cần thêm</label>
+                                <input type="number" name="quantity" class="form-control quantity-import" min="5" max="10000" required oninput="if(this.value > 10000) this.value = 10000; if(this.value < 0) this.value = 0;" />
+                                <div class="text-warning small mt-1 quantity-warning" style="display:none;">
+                                    <i class="fas fa-exclamation-triangle me-1"></i> Số lượng nhập phải từ 5 đến 10.000.
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Lưu ý</label>
+                                <textarea name="note" class="form-control" rows="2"></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy bỏ</button>
+                            <button type="submit" class="btn btn-success">Nhập khẩu</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Export Modal -->
+        <div class="modal fade" id="exportModal-@variant.Id" tabindex="-1">
+            <div class="modal-dialog">
+                <form asp-action="ExportStock" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="variantId" value="@variant.Id" />
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Xuất kho - @variant.Size / <span style="display:inline-block; width: 14px; height: 14px; background-color:@variant.Color; border-radius:50%; border:1px solid #000;"></span> @variant.Color</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label class="form-label">Số lượng cần loại bỏ (Tối đa: @variant.Quantity)</label>
+                                <input type="number" name="quantity" class="form-control quantity-export" min="1" max="@variant.Quantity" required oninput="this.value = Math.min(@variant.Quantity, Math.max(0, this.value))" />
+                                <div class="text-warning small mt-1 quantity-warning" style="display:none;">
+                                    <i class="fas fa-exclamation-triangle me-1"></i> Số lượng xuất phải từ 5 đến 10.000.
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Lưu ý</label>
+                                <textarea name="note" class="form-control" rows="2"></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy bỏ</button>
+                            <button type="submit" class="btn btn-danger">Xuất</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    }
+}
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            var predefinedColors = ["#FF0000", "#FF4500", "#FF8C00", "#FFA500", "#FFD700", "#9ACD32", "#008000", "#00FFFF", "#0000FF", "#4B0082", "#800080", "#C71585", "#000000", "#FFFFFF", "#808080"];
+            
+            // Re-hydrate all the color selects based on their variant color
+            const modalInputs = document.querySelectorAll('[id^="customColorInput-"]');
+            
+            modalInputs.forEach(input => {
+                const variantId = input.id.replace('customColorInput-', '');
+                const colorSelect = document.getElementById('colorSelect-' + variantId);
+                const initialColor = input.value.toUpperCase();
+
+                if (predefinedColors.includes(initialColor)) {
+                    colorSelect.value = initialColor;
+                    colorSelect.setAttribute("name", "newColor");
+                    input.removeAttribute("name");
+                    input.style.display = "none";
+                } else {
+                    colorSelect.value = "Other";
+                    input.value = initialColor;
+                    input.setAttribute("name", "newColor");
+                    colorSelect.removeAttribute("name");
+                    input.style.display = "block";
+                }
+            });
+        });
+
+        function toggleCustomColor(variantId) {
+            var select = document.getElementById("colorSelect-" + variantId);
+            var input = document.getElementById("customColorInput-" + variantId);
+            
+            if (select.value === "Other") {
+                input.style.display = "block";
+                input.setAttribute("name", "newColor"); 
+                select.removeAttribute("name");
+            } else {
+                input.style.display = "none";
+                input.value = select.value;
+                input.removeAttribute("name"); 
+                select.setAttribute("name", "newColor");
+            }
+        }
+
+        // Real-time validation for modals
+        document.addEventListener("DOMContentLoaded", function() {
+            document.querySelectorAll('.quantity-import').forEach(input => {
+                input.addEventListener('input', function() {
+                    const warning = this.nextElementSibling;
+                    const val = parseInt(this.value);
+                    if (val < 5 || val > 10000) {
+                        warning.style.display = 'block';
+                        this.classList.add('is-invalid');
+                    } else {
+                        warning.style.display = 'none';
+                        this.classList.remove('is-invalid');
+                    }
+                });
+            });
+
+            document.querySelectorAll('.quantity-export').forEach(input => {
+                input.addEventListener('input', function() {
+                    const warning = this.nextElementSibling;
+                    const val = parseInt(this.value);
+                    const max = parseInt(this.getAttribute('max'));
+                    if (val < 1 || val > max) {
+                        warning.textContent = "Số lượng xuất phải từ 1 đến " + max;
+                        warning.style.display = 'block';
+                        this.classList.add('is-invalid');
+                    } else {
+                        warning.style.display = 'none';
+                        this.classList.remove('is-invalid');
+                    }
+                });
+            });
+        });
+    </script>
+}

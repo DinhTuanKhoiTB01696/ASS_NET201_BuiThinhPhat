@@ -1,0 +1,121 @@
+@model List<Assignment_NET201.ViewModels.CartItem>
+
+@{
+    ViewData["Title"] = "Checkout";
+}
+
+<div class="container mt-5 mb-5">
+    <div class="mb-3">
+        <partial name="_BackButton" />
+    </div>
+    <h2 class="fw-bold text-uppercase mb-4 text-center" style="font-family: 'Anton', sans-serif;">Checkout</h2>
+
+    <div class="row">
+        <!-- Shipping Info (Read-only for now based on User Profile) -->
+        <div class="col-md-7">
+            <h5 class="fw-bold text-uppercase mb-3">Shipping Address</h5>
+            <!-- In a real app, we would let them edit this or select from saved addresses -->
+            <div class="card rounded-0 mb-4">
+                <div class="card-body">
+                    @{
+                        var user = ViewBag.CurrentUser as Assignment_NET201.Models.AppUser;
+                    }
+                    <p class="mb-1 fw-bold">@(user?.FullName ?? User.Identity?.Name)</p>
+                    <p class="mb-1">@(user?.Address ?? "No address provided")</p>
+                    <p class="mb-0">@(user?.PhoneNumber ?? "No phone number")</p>
+                    <a asp-controller="Account" asp-action="Profile"
+                        class="small text-decoration-underline mt-2 d-inline-block text-dark">Change Address</a>
+                </div>
+            </div>
+
+            <h5 class="fw-bold text-uppercase mb-3">Payment Method</h5>
+            <div class="card rounded-0 mb-4">
+                <div class="card-body">
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="radio" name="paymentMethod" id="cod" checked>
+                        <label class="form-check-label fw-bold" for="cod">
+                            Cash on Delivery (COD)
+                        </label>
+                    </div>
+                    <div class="form-check disabled">
+                        <input class="form-check-input" type="radio" name="paymentMethod" id="bank" disabled>
+                        <label class="form-check-label text-secondary" for="bank">
+                            Bank Transfer (Coming Soon)
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Summary -->
+        <div class="col-md-5">
+            <div class="bg-light p-4">
+                <h5 class="fw-bold text-uppercase mb-4">Your Order</h5>
+
+                @foreach (var item in Model)
+                {
+                    <div class="d-flex justify-content-between mb-3 align-items-center">
+                        <div class="d-flex align-items-center">
+                            <div class="position-relative">
+                                <img src="@item.ImageUrl" width="50" class="img-thumbnail rounded-0 me-3">
+                                <span
+                                    class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-secondary">@item.Quantity</span>
+                            </div>
+                            <div>
+                                <h6 class="mb-0 small text-uppercase fw-bold">@item.ProductName</h6>
+                                <span class="text-secondary small">Size: @item.Size</span>
+                            </div>
+                        </div>
+                        <span class="small fw-bold">@item.Total.ToString("N0")</span>
+                    </div>
+                }
+
+                <hr>
+
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Subtotal</span>
+                    <span class="fw-bold">@Model.Sum(x => x.Total).ToString("N0") VND</span>
+                </div>
+
+                @if (ViewBag.AppliedVoucher != null)
+                {
+                    <div class="d-flex justify-content-between mb-2 text-success">
+                        <span>Voucher Discount (@ViewBag.AppliedVoucher.Code)</span>
+                        <span>- @(((decimal)ViewBag.DiscountAmount - (Model.Sum(x => x.Total) - (decimal)ViewBag.DiscountAmount) / (1 - (decimal)ViewBag.RankDiscountPercent / 100) * ((decimal)ViewBag.RankDiscountPercent / 100)).ToString("N0")) VND</span>
+                        <!-- Note: The calculation above is slightly complex to separate Rank from Voucher, 
+                             but simpler display is usually better. Let's just show total discount or breakdown. -->
+                    </div>
+                }
+
+                @if (ViewBag.RankDiscountPercent > 0)
+                {
+                    <div class="d-flex justify-content-between mb-2 text-info">
+                        <span>Rank Discount (@user.Rank - @(ViewBag.RankDiscountPercent)%)</span>
+                        <span class="fw-bold">- @(((Model.Sum(x => x.Total) - (decimal)ViewBag.DiscountAmount / (1 + (ViewBag.AppliedVoucher != null ? 0 : 0))) * ((decimal)ViewBag.RankDiscountPercent / 100)).ToString("N0")) VND</span>
+                    </div>
+                }
+
+                <div class="d-flex justify-content-between mb-3">
+                    <span>Shipping</span>
+                    <span class="text-success">Free</span>
+                </div>
+                
+                <div class="d-flex justify-content-between mb-4 pt-3 border-top">
+                    <span class="fs-5 fw-bold text-uppercase">Total</span>
+                    <span class="fs-5 fw-bold">@((Model.Sum(x => x.Total) - (decimal)ViewBag.DiscountAmount).ToString("N0")) VND</span>
+                </div>
+                
+                <div class="alert alert-info py-2 rounded-0 small">
+                    <i class="fas fa-coins me-2"></i> Bạn sẽ tích được <strong>@((int)((Model.Sum(x => x.Total) - (decimal)ViewBag.DiscountAmount) / 10000))</strong> điểm sau khi nhận hàng.
+                </div>
+
+                <form asp-action="PlaceOrder" method="post">
+                    <button type="submit" class="btn btn-dark w-100 rounded-0 py-3 text-uppercase fw-bold">Place
+                        Order</button>
+                    <p class="text-center small text-secondary mt-3">By placing your order, you agree to our Terms of
+                        Use.</p>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

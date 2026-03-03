@@ -1,0 +1,148 @@
+@model Assignment_NET201.ViewModels.RegisterViewModel
+
+@{
+    ViewData["Title"] = "My Profile";
+}
+
+<div class="container mt-5 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <h2 class="fw-bold text-uppercase mb-4 text-center" style="font-family: 'Anton', sans-serif;">My Profile
+            </h2>
+
+            @if (ViewBag.Message != null)
+            {
+                <div class="alert alert-success rounded-0">@ViewBag.Message</div>
+            }
+
+            <form asp-action="Profile" method="post">
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <div class="mb-3">
+                    <label asp-for="Email" class="form-label fw-bold">Email</label>
+                    <input asp-for="Email" class="form-control rounded-0 bg-light" readonly />
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="FullName" class="form-label fw-bold">Full Name</label>
+                    <input asp-for="FullName" class="form-control rounded-0" />
+                    <span asp-validation-for="FullName" class="text-danger small"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="PhoneNumber" class="form-label fw-bold">Phone Number</label>
+                    <input asp-for="PhoneNumber" class="form-control rounded-0" />
+                    <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold text-uppercase small">Tỉnh / Thành phố</label>
+                    <select id="province" class="form-select rounded-0">
+                        <option value="">Chọn Tỉnh / Thành phố</option>
+                    </select>
+                </div>
+
+                <div class="row g-2 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold text-uppercase small">Quận / Huyện</label>
+                        <select id="district" class="form-select rounded-0" disabled>
+                            <option value="">Chọn Quận / Huyện</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold text-uppercase small">Phường / Xã</label>
+                        <select id="ward" class="form-select rounded-0" disabled>
+                            <option value="">Chọn Phường / Xã</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="streetAddress" class="form-label fw-bold text-uppercase small">Số nhà, tên đường</label>
+                    <input id="streetAddress" class="form-control rounded-0" placeholder="Số nhà, tên đường" />
+                </div>
+
+                <!-- Hidden field to store the combined address -->
+                <input type="hidden" asp-for="Address" id="fullAddress" />
+                <span asp-validation-for="Address" class="text-danger small"></span>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold text-uppercase small">Địa chỉ hiện tại</label>
+                    <p class="text-muted border p-2 bg-light">@Model.Address</p>
+                </div>
+
+                <!-- Password Field Hidden/Disabled -->
+                <input type="hidden" asp-for="Password" value="Placeholder1!" />
+                <input type="hidden" asp-for="ConfirmPassword" value="Placeholder1!" />
+
+                <button type="submit" class="btn btn-dark w-100 rounded-0 text-uppercase fw-bold py-3">Update
+                    Profile</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        $(document).ready(function () {
+            const provinceSelect = $('#province');
+            const districtSelect = $('#district');
+            const wardSelect = $('#ward');
+            const streetInput = $('#streetAddress');
+            const fullAddressInput = $('#fullAddress');
+
+            // Fetch provinces
+            fetch('https://provinces.open-api.vn/api/p/')
+                .then(res => res.json())
+                .then(data => {
+                    data.forEach(p => provinceSelect.append(new Option(p.name, p.code)));
+                });
+
+            provinceSelect.on('change', function () {
+                const code = $(this).val();
+                districtSelect.empty().append(new Option("Chọn Quận / Huyện", "")).prop('disabled', !code);
+                wardSelect.empty().append(new Option("Chọn Phường / Xã", "")).prop('disabled', true);
+                if (code) {
+                    fetch(`https://provinces.open-api.vn/api/p/${code}?depth=2`)
+                        .then(res => res.json())
+                        .then(data => {
+                            data.districts.forEach(d => districtSelect.append(new Option(d.name, d.code)));
+                        });
+                }
+                combineAddress();
+            });
+
+            districtSelect.on('change', function () {
+                const code = $(this).val();
+                wardSelect.empty().append(new Option("Chọn Phường / Xã", "")).prop('disabled', !code);
+                if (code) {
+                    fetch(`https://provinces.open-api.vn/api/d/${code}?depth=2`)
+                        .then(res => res.json())
+                        .then(data => {
+                            data.wards.forEach(w => wardSelect.append(new Option(w.name, w.code)));
+                        });
+                }
+                combineAddress();
+            });
+
+            wardSelect.on('change', combineAddress);
+            streetInput.on('input', combineAddress);
+
+            function combineAddress() {
+                const p = provinceSelect.find("option:selected").text();
+                const d = districtSelect.find("option:selected").text();
+                const w = wardSelect.find("option:selected").text();
+                const s = streetInput.val();
+
+                let full = "";
+                if (s) full += s;
+                if (w && w !== "Chọn Phường / Xã") full += (full ? ", " : "") + w;
+                if (d && d !== "Chọn Quận / Huyện") full += (full ? ", " : "") + d;
+                if (p && p !== "Chọn Tỉnh / Thành phố") full += (full ? ", " : "") + p;
+
+                fullAddressInput.val(full);
+            }
+        });
+    </script>
+}

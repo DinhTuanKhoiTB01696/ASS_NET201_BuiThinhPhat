@@ -1,0 +1,103 @@
+@model IEnumerable<Assignment_NET201.Models.Order>
+
+@{
+    ViewData["Title"] = "My Orders";
+}
+
+<div class="container mt-5 mb-5">
+    <h2 class="fw-bold text-uppercase mb-4" style="font-family: 'Anton', sans-serif;">My Orders</h2>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (Model.Any())
+    {
+        <div class="accordion" id="ordersAccordion">
+            @foreach (var order in Model)
+            {
+                <div class="accordion-item rounded-0 border mb-3">
+                    <h2 class="accordion-header d-flex align-items-center bg-white" id="heading-@order.Id">
+                        <button class="accordion-button collapsed bg-white shadow-none" type="button" data-bs-toggle="collapse"
+                            data-bs-target="#collapse-@order.Id" aria-expanded="false" aria-controls="collapse-@order.Id">
+                            <div class="d-flex w-100 justify-content-between align-items-center me-3">
+                                <div>
+                                    <span class="fw-bold">Order #@order.Id</span>
+                                    <span class="text-secondary small ms-2">@order.OrderDate.ToString("MMM dd, yyyy")</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-3">
+                                    <span class="badge @(order.Status == "Cancelled" ? "bg-danger" : "bg-light text-dark") rounded-0 border">@order.Status</span>
+                                    <span class="fw-bold">@order.TotalAmount.ToString("N0") VND</span>
+                                </div>
+                            </div>
+                        </button>
+                        
+                        @if(order.Status == "Pending")
+                        {
+                            <div class="pe-3 bg-white" style="z-index: 10;">
+                                <form asp-action="CancelOrder" method="post" class="m-0" onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn hàng này?');">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@order.Id" />
+                                    <button type="submit" class="btn btn-sm btn-outline-danger text-nowrap">Hủy Đơn</button>
+                                </form>
+                            </div>
+                        }
+                    </h2>
+                    <div id="collapse-@order.Id" class="accordion-collapse collapse" aria-labelledby="heading-@order.Id"
+                        data-bs-parent="#ordersAccordion">
+                        <div class="accordion-body bg-light">
+                            <table class="table table-sm table-borderless">
+                                <tbody>
+                                    @{ decimal subtotal = 0; }
+                                    @foreach (var detail in order.OrderDetails)
+                                    {
+                                        var itemTotal = detail.UnitPrice * detail.Quantity;
+                                        subtotal += itemTotal;
+                                        <tr>
+                                             <td>
+                                                 @detail.ProductName
+                                                 <br /><small class="text-secondary">Size: @detail.Size | Color: @detail.Color</small>
+                                             </td>
+                                            <td class="text-secondary">x @detail.Quantity</td>
+                                             <td class="text-end">@itemTotal.ToString("N0")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                                <tfoot class="border-top">
+                                    <tr>
+                                        <td colspan="2" class="text-end text-secondary small">Tổng phụ</td>
+                                        <td class="text-end text-secondary small">@subtotal.ToString("N0")</td>
+                                    </tr>
+                                    @if (order.DiscountAmount > 0)
+                                    {
+                                        <tr>
+                                            <td colspan="2" class="text-end text-danger small">Giảm giá Voucher/Rank</td>
+                                            <td class="text-end text-danger small">- @order.DiscountAmount.ToString("N0")</td>
+                                        </tr>
+                                    }
+                                    <tr>
+                                        <td colspan="2" class="fw-bold text-end">Tổng cộng</td>
+                                        <td class="fw-bold text-end text-success">@order.TotalAmount.ToString("N0")</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <p class="text-secondary">You haven't placed any orders yet.</p>
+        <a asp-controller="Home" asp-action="Shop" class="btn btn-dark rounded-0 text-uppercase fw-bold">Start Shopping</a>
+    }
+</div>

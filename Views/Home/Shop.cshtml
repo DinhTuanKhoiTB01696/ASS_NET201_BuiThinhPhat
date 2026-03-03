@@ -1,0 +1,102 @@
+@model IEnumerable<Assignment_NET201.Models.Product>
+@{
+    ViewData["Title"] = "Shop";
+    var categories = ViewBag.Categories as IEnumerable<Assignment_NET201.Models.Category>;
+}
+
+<div class="container mt-5">
+    <div class="row">
+        <!-- Sidebar Filters -->
+        <div class="col-md-3 mb-4">
+            <h5 class="fw-bold text-uppercase mb-3">Filters</h5>
+            <form asp-action="Shop" method="get">
+                <!-- Search -->
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-uppercase">Search</label>
+                    <input type="text" name="searchString" class="form-control rounded-0" placeholder="Product name..." value="@ViewBag.SearchString">
+                </div>
+
+                <!-- Categories -->
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-uppercase">Category</label>
+                    <select name="categoryId" class="form-select rounded-0">
+                        <option value="">All Categories</option>
+                        @if (categories != null)
+                        {
+                            foreach (var cat in categories)
+                            {
+                                <option value="@cat.Id" selected="@(ViewBag.CategoryId == cat.Id)">@cat.Name</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <!-- Price Range -->
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-uppercase">Price Range</label>
+                    <div class="input-group mb-2">
+                        <span class="input-group-text rounded-0 bg-white">₫</span>
+                        <input type="number" name="minPrice" class="form-control rounded-0" placeholder="Min" value="@ViewBag.MinPrice">
+                    </div>
+                    <div class="input-group">
+                        <span class="input-group-text rounded-0 bg-white">₫</span>
+                        <input type="number" name="maxPrice" class="form-control rounded-0" placeholder="Max" value="@ViewBag.MaxPrice">
+                    </div>
+                </div>
+
+                <!-- Sorting -->
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-uppercase">Sort By</label>
+                    <select name="sortOrder" class="form-select rounded-0">
+                        <option value="">Default</option>
+                        <option value="price_asc" selected="@(ViewData["CurrentSort"]?.ToString() == "price_asc")">Price: Low to High</option>
+                        <option value="price_desc" selected="@(ViewData["CurrentSort"]?.ToString() == "price_desc")">Price: High to Low</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn btn-dark w-100 rounded-0 text-uppercase fw-bold">Apply Filters</button>
+            </form>
+        </div>
+
+        <!-- Product Grid -->
+        <div class="col-md-9">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="fw-bold text-uppercase" style="font-family: 'Anton', sans-serif;">Shop All</h2>
+                <span class="text-secondary small">Showing @Model.Count() products</span>
+            </div>
+
+            <div class="row row-cols-1 row-cols-md-3 g-4">
+                @if (Model.Any())
+                {
+                    foreach (var item in Model)
+                    {
+                        <div class="col">
+                            <div class="card h-100 border-0 shadow-sm product-card">
+                                <div class="position-relative overflow-hidden">
+                                    <a asp-action="ProductDetail" asp-route-id="@item.Id">
+                                        <img src="@item.ImageUrl" class="card-img-top rounded-0" alt="@item.Name"
+                                            style="height: 300px; object-fit: cover;">
+                                    </a>
+                                </div>
+                                <div class="card-body text-center">
+                                    <h6 class="card-title text-uppercase fw-bold mb-1">
+                                        <a asp-action="ProductDetail" asp-route-id="@item.Id"
+                                            class="text-decoration-none text-dark">@item.Name</a>
+                                    </h6>
+                                    <p class="card-text text-secondary fw-bold">@item.Price.ToString("N0") VND</p>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="col-12 text-center py-5">
+                        <p class="text-secondary">No products found matching your criteria.</p>
+                        <a asp-action="Shop" class="btn btn-outline-dark rounded-0">Clear Filters</a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

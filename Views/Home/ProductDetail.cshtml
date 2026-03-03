@@ -1,0 +1,747 @@
+@model Assignment_NET201.Models.Product
+@{
+    ViewData["Title"] = Model.Name;
+}
+
+<div class="container mt-4 mb-5">
+    <!-- Breadcrumbs -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb text-uppercase small" style="font-size: 0.8rem;">
+            <li class="breadcrumb-item"><a href="/" class="text-decoration-none text-secondary">Trang chủ</a></li>
+            <li class="breadcrumb-item"><a href="/Shop" class="text-decoration-none text-secondary">Sản phẩm</a></li>
+            <li class="breadcrumb-item active fw-bold text-dark" aria-current="page">@Model.Name</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <!-- Product Images -->
+        <div class="col-md-6 mb-4">
+            <div class="bg-light p-3 position-relative">
+                <span id="stockStatusBadge" class="badge bg-success position-absolute top-0 start-0 m-3 fs-6 rounded-1">Còn hàng</span>
+                <img id="mainImage" src="@Model.ImageUrl" class="img-fluid w-100 object-fit-cover" alt="@Model.Name"
+                    style="max-height: 600px;">
+            </div>
+            <div class="row g-2 mt-2">
+                <!-- Thumbnails -->
+                <div class="col-3 cursor-pointer"><img src="@Model.ImageUrl" class="img-fluid border border-dark object-fit-cover" style="height: 100px;"></div>
+                <!-- Additional thumbnails would go here -->
+            </div>
+        </div>
+
+        <!-- Product Details -->
+        <div class="col-md-6 ps-md-5">
+            <h1 class="fw-bold fs-3 mb-2" style="font-family: Arial, sans-serif; color: #000;">@Model.Name</h1>
+            <div class="mb-3 text-secondary small">Mã sản phẩm: SP-@Model.Id.ToString("D5")</div>
+            <h3 class="fw-bold mb-4" style="color: #000;">@Model.Price.ToString("N0")đ</h3>
+            
+            <div class="mb-3">
+                <span id="stockDisplay" class="badge bg-light text-dark border p-2 fw-normal">
+                    <i class="fas fa-box me-1"></i> Còn lại: @Model.Quantity sản phẩm
+                </span>
+            </div>
+
+            <!-- Vouchers Section -->
+            @if (ViewBag.Vouchers != null && ((IEnumerable<Assignment_NET201.Models.Voucher>)ViewBag.Vouchers).Any())
+            {
+                <div class="border rounded p-3 mb-4" style="border-style: dashed !important; border-color: #dc3545 !important;">
+                    <div class="d-flex align-items-center mb-2 text-danger fw-bold">
+                        <i class="fas fa-gift me-2"></i> ƯU ĐÃI ONLINE
+                    </div>
+                    <ul class="list-unstyled mb-0 small text-secondary">
+                        @foreach (var voucher in (IEnumerable<Assignment_NET201.Models.Voucher>)ViewBag.Vouchers)
+                        {
+                            <li class="mb-1">
+                                Nhập mã <span class="fw-bold text-dark">@voucher.Code</span> 
+                                giảm @(voucher.DiscountType == "FixedAmount" ? voucher.DiscountValue.ToString("N0") + "đ" : voucher.DiscountValue.ToString("N0") + "%")
+                                đơn từ @voucher.MinOrderValue.ToString("N0")
+                            </li>
+                        }
+                    </ul>
+                    <hr class="my-2 border-secondary opacity-25">
+                    <div class="d-flex flex-wrap gap-2 mt-2">
+                        @foreach (var voucher in (IEnumerable<Assignment_NET201.Models.Voucher>)ViewBag.Vouchers)
+                        {
+                            <div class="border border-secondary rounded px-2 py-1 text-secondary" style="font-size: 0.75rem; border-style: dashed !important; position: relative; display: inline-block;">
+                                <span style="position: absolute; left: -4px; top: 50%; transform: translateY(-50%); width: 8px; height: 8px; background-color: white; border-right: 1px solid #6c757d; border-radius: 50%;"></span>
+                                VOUCHER @(voucher.DiscountType == "FixedAmount" ? (voucher.DiscountValue >= 1000 ? (voucher.DiscountValue/1000).ToString("0") + "K" : voucher.DiscountValue.ToString("0")) : voucher.DiscountValue.ToString("0") + "%")
+                                <span style="position: absolute; right: -4px; top: 50%; transform: translateY(-50%); width: 8px; height: 8px; background-color: white; border-left: 1px solid #6c757d; border-radius: 50%;"></span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+
+            <form asp-controller="Cart" asp-action="AddToCart" method="post" id="addToCartForm">
+                <input type="hidden" name="productId" value="@Model.Id" />
+                
+                <!-- We still need to submit 'size' and 'color', so hidden inputs or radio buttons can do this. 
+                     Using hidden inputs updated by JS is cleaner for dynamic UIs -->
+                <input type="hidden" name="size" id="selectedSizeInput" value="" />
+                <input type="hidden" name="color" id="selectedColorInput" value="" />
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold text-dark small mb-1">Màu sắc: <span id="colorNameDisplay" class="fw-normal"></span></label>
+                    <div class="d-flex gap-2 flex-wrap mt-1" id="colorContainer">
+                        <!-- Colors will be populated by JS -->
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <label class="form-label fw-bold text-dark small mb-0">Kích thước: <span id="sizeNameDisplay" class="fw-normal"></span></label>
+                        <a href="#" class="text-decoration-none small text-dark d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#sizeGuideModal">
+                            <i class="fas fa-ruler-combined me-1"></i> <span class="text-decoration-underline">Hướng dẫn chọn size</span>
+                        </a>
+                    </div>
+                    <div class="d-flex gap-2 flex-wrap" id="sizeContainer">
+                        <!-- Sizes will be populated by JS -->
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center mb-4 gap-3">
+                    <div class="input-group align-items-center" style="width: 140px; height: 50px; border-radius: 50px; border: 1.5px solid #000;">
+                        <button class="btn border-0 px-3 h-100 d-flex align-items-center justify-content-center fw-bold" type="button" onclick="changeQty(-1)" style="color: #000; box-shadow: none; background: transparent;">
+                            <i class="fas fa-minus fa-sm"></i>
+                        </button>
+                        <input type="text" class="form-control h-100 text-center border-0 fw-bold px-0 shadow-none" id="quantityInput" name="quantity" value="1" onchange="if(this.value < 1) this.value = 1;" style="color: #000; background: transparent; font-size: 1.2rem;">
+                        <button class="btn border-0 px-3 h-100 d-flex align-items-center justify-content-center fw-bold" type="button" onclick="changeQty(1)" style="color: #000; box-shadow: none; background: transparent;">
+                            <i class="fas fa-plus fa-sm"></i>
+                        </button>
+                    </div>
+                    <div class="flex-grow-1">
+                        <button id="addToCartBtn" class="btn btn-outline-dark w-100 rounded-0 text-uppercase fw-bold py-2 btn-add-cart" type="submit" disabled style="height: 45px; border-width: 1px;">
+                            Thêm Vào Giỏ
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <button type="button" class="btn w-100 rounded-0 text-uppercase fw-bold py-3 text-white btn-buy-now" onclick="document.getElementById('addToCartForm').submit(); window.location.href='/Cart';">
+                        Mua Ngay
+                    </button>
+                </div>
+
+                <div class="d-flex align-items-center justify-content-center mt-3 border rounded-1 p-2 btn-wishlist-wrapper">
+                    <a asp-controller="Cart" asp-action="AddToWishlist" asp-route-productId="@Model.Id" class="text-decoration-none text-dark fw-bold small d-flex align-items-center btn-wishlist-link">
+                        <i class="far fa-heart me-2 fs-5"></i> Có @Model.Quantity khách hàng thêm vào Wishlist
+                    </a>
+                </div>
+            </form>
+
+            <div class="mt-4 pt-3 border-top">
+                <div class="row text-center text-secondary small g-3">
+                    <div class="col-4">
+                        <i class="fas fa-truck fs-4 mb-2 text-dark"></i>
+                        <p class="mb-0 lh-sm">Freeship đơn<br>từ 299K</p>
+                    </div>
+                    <div class="col-4">
+                        <i class="fas fa-money-bill-wave fs-4 mb-2 text-dark"></i>
+                        <p class="mb-0 lh-sm">Thanh toán<br>COD</p>
+                    </div>
+                    <div class="col-4">
+                        <i class="fas fa-undo fs-4 mb-2 text-dark"></i>
+                        <p class="mb-0 lh-sm">Đổi hàng<br>trong 15 ngày</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Product Extra Info Tabs -->
+            <div class="mt-5">
+                <ul class="nav nav-tabs border-bottom-0 gap-3" id="productInfoTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active bg-transparent border-0 border-bottom border-dark border-2 text-dark fw-bold px-0 pb-2 rounded-0 text-uppercase" style="font-size: 0.9rem;" id="desc-tab" data-bs-toggle="tab" data-bs-target="#desc-pane" type="button" role="tab" aria-controls="desc-pane" aria-selected="true">Mô tả</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link bg-transparent border-0 text-secondary fw-bold px-0 pb-2 rounded-0 text-uppercase" style="font-size: 0.9rem;" id="delivery-tab" data-bs-toggle="tab" data-bs-target="#delivery-pane" type="button" role="tab" aria-controls="delivery-pane" aria-selected="false">Chính sách giao hàng</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link bg-transparent border-0 text-secondary fw-bold px-0 pb-2 rounded-0 text-uppercase" style="font-size: 0.9rem;" id="return-tab" data-bs-toggle="tab" data-bs-target="#return-pane" type="button" role="tab" aria-controls="return-pane" aria-selected="false">Chính sách đổi hàng</button>
+                    </li>
+                </ul>
+                <div class="tab-content pt-4" id="productInfoContent">
+                    <div class="tab-pane fade show active" id="desc-pane" role="tabpanel" aria-labelledby="desc-tab" tabindex="0">
+                        <h6 class="fw-bold mb-3" style="color: #000;">@Model.Name</h6>
+                        <ul class="list-unstyled text-secondary small mb-4 lh-lg">
+                            <li><i class="fas fa-circle fa-xs me-2 text-dark" style="font-size: 0.4rem;"></i><strong>Chất liệu:</strong> Cao cấp, thoáng mát</li>
+                            <li><i class="fas fa-circle fa-xs me-2 text-dark" style="font-size: 0.4rem;"></i><strong>Danh mục:</strong> @(Model.Category?.Name ?? "Quần áo")</li>
+                        </ul>
+                        
+                        <p class="fw-bold mb-1 text-uppercase text-dark small"><i class="fas fa-caret-right me-1"></i> Chi Tiết Điểm Nhấn</p>
+                        <p class="text-secondary small lh-lg">
+                            @Model.Description 
+                            Sản phẩm sử dụng thiết kế tinh tế, mang lại cảm giác thoải mái khi mặc định hàng ngày cũng như tôn lên vẻ thanh lịch trong các dịp đặc biệt.
+                        </p>
+                        
+                        <p class="fw-bold mb-1 text-uppercase text-dark small mt-4"><i class="fas fa-caret-right me-1"></i> Hướng Dẫn Bảo Quản</p>
+                        <ul class="text-secondary small lh-lg mb-0 ps-3">
+                            <li>Giặt máy bằng nước lạnh.</li>
+                            <li>Không sử dụng chất tẩy mạnh.</li>
+                            <li>Là ủi ở nhiệt độ thấp nếu cần.</li>
+                        </ul>
+                    </div>
+                    <div class="tab-pane fade" id="delivery-pane" role="tabpanel" aria-labelledby="delivery-tab" tabindex="0">
+                        <h6 class="fw-bold mb-3">Thông Tin Vận Chuyển</h6>
+                        <p class="text-secondary small lh-lg">
+                            - <strong>Nội thành TP HCM & HN:</strong> 1-2 ngày làm việc.<br>
+                            - <strong>Khu vực khác:</strong> 3-5 ngày làm việc.<br>
+                            - Hỗ trợ Freeship cho mọi đơn hàng có giá trị từ 299,000 VND. Đối với đơn hàng thấp hơn, phí ship đồng giá 30,000 VND trên toàn quốc.
+                        </p>
+                    </div>
+                    <div class="tab-pane fade" id="return-pane" role="tabpanel" aria-labelledby="return-tab" tabindex="0">
+                        <h6 class="fw-bold mb-3">Chính Sách Đổi Trả Dễ Dàng</h6>
+                        <p class="text-secondary small lh-lg">
+                            Quý khách có thể đổi trả sản phẩm trong vòng <strong>15 ngày</strong> kể từ ngày nhận hàng với các điều kiện sau:
+                            <br><br>
+                            1. Sản phẩm còn nguyên tag, mác, chưa qua sử dụng hay giặt ủi.<br>
+                            2. Không áp dụng đổi trả cho các sản phẩm trong mục Sale/Outlet lớn hơn 50%.<br>
+                            3. Phí vận chuyển đổi hàng (nếu do nhu cầu cá nhân) sẽ do khách hàng chi trả. Nếu lỗi do nhà sản xuất, chúng tôi hoàn toàn chịu phí.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+<!-- Size Guide Modal -->
+<div class="modal fade" id="sizeGuideModal" tabindex="-1" aria-labelledby="sizeGuideModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content border-0 rounded-4 shadow-lg">
+      <div class="modal-header border-bottom px-4 pt-4 pb-3">
+        <h5 class="modal-title fw-bold text-uppercase" id="sizeGuideModalLabel" style="color: #000;">Bảng Kích Thước</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4">
+        
+        <!-- Tabs for Tops vs Bottoms -->
+        <ul class="nav nav-tabs mb-4" id="sizeGuideTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active fw-bold text-dark" id="tops-tab" data-bs-toggle="tab" data-bs-target="#tops-pane" type="button" role="tab" aria-controls="tops-pane" aria-selected="true">ÁO (T-Shirt/Regular)</button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold text-dark" id="bottoms-tab" data-bs-toggle="tab" data-bs-target="#bottoms-pane" type="button" role="tab" aria-controls="bottoms-pane" aria-selected="false">QUẦN (Jeans/Slim Straight)</button>
+          </li>
+        </ul>
+
+        <div class="tab-content" id="myTabContent">
+          <!-- TOPS TAB -->
+          <div class="tab-pane fade show active" id="tops-pane" role="tabpanel" aria-labelledby="tops-tab" tabindex="0">
+             <div class="row align-items-center mb-4">
+                 <div class="col-md-6 text-center">
+                     <i class="fas fa-tshirt text-secondary" style="font-size: 8rem; opacity: 0.1;"></i>
+                     <p class="mt-3 text-muted small px-3">Form Regular thoải mái, vừa vặn tôn dáng.</p>
+                 </div>
+                 <div class="col-md-6">
+                    <h6 class="fw-bold mb-3 text-uppercase text-end" style="color: #000;">FORM REGULAR</h6>
+                    <div class="table-responsive rounded border">
+                        <table class="table table-borderless table-striped table-hover text-center mb-0 align-middle">
+                            <thead class="text-white" style="background-color: #000;">
+                                <tr>
+                                    <th>Size</th>
+                                    <th>Chiều cao</th>
+                                    <th>Cân nặng</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td class="fw-bold">S</td><td>1m60 - 1m68</td><td>55kg - 60kg</td></tr>
+                                <tr><td class="fw-bold">M</td><td>1m60 - 1m70</td><td>60kg - 70kg</td></tr>
+                                <tr><td class="fw-bold">L</td><td>1m70 - 1m80</td><td>70kg - 80kg</td></tr>
+                                <tr><td class="fw-bold">XL</td><td>1m80 - 1m88</td><td>80kg - 90kg</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                 </div>
+             </div>
+             
+             <div class="table-responsive border rounded">
+                <table class="table text-center table-bordered mb-0 align-middle">
+                    <thead class="text-white" style="background-color: #000;">
+                        <tr>
+                            <th class="text-start ps-3" style="width: 25%;">Mô tả</th>
+                            <th>S</th>
+                            <th>M</th>
+                            <th>L</th>
+                            <th>XL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td class="text-start ps-3"><span class="badge rounded-circle bg-dark me-2">1</span> Dài áo</td><td>69</td><td>70</td><td>71</td><td>72</td></tr>
+                        <tr class="table-light"><td class="text-start ps-3"><span class="badge rounded-circle bg-dark me-2">2</span> Ngang vai</td><td>43.5</td><td>45</td><td>46.5</td><td>48</td></tr>
+                        <tr><td class="text-start ps-3"><span class="badge rounded-circle bg-dark me-2">3</span> Rộng ngực</td><td>50</td><td>53</td><td>56</td><td>59</td></tr>
+                        <tr class="table-light"><td class="text-start ps-3"><span class="badge rounded-circle bg-dark me-2">4</span> Ngang bụng</td><td>49</td><td>52</td><td>55</td><td>58</td></tr>
+                        <tr><td class="text-start ps-3"><span class="badge rounded-circle bg-dark me-2">5</span> Dài tay</td><td>20</td><td>21</td><td>22</td><td>23</td></tr>
+                        <tr class="table-light"><td class="text-start ps-3"><span class="badge rounded-circle bg-dark me-2">6</span> Bắp tay</td><td>20</td><td>21</td><td>22</td><td>23</td></tr>
+                    </tbody>
+                </table>
+             </div>
+             <p class="text-end text-muted small mt-2 fst-italic">* Thông số size có độ sai số (±1)</p>
+          </div>
+
+          <!-- BOTTOMS TAB -->
+          <div class="tab-pane fade" id="bottoms-pane" role="tabpanel" aria-labelledby="bottoms-tab" tabindex="0">
+             <div class="row align-items-center mb-4">
+                 <div class="col-md-6 text-center">
+                     <i class="fas fa-shoe-prints text-secondary" style="font-size: 8rem; opacity: 0.1; transform: rotate(-90deg);"></i>
+                     <p class="mt-3 text-muted small px-3">Form Slim Straight Fit ống suông vừa phải, co giãn siêu tốt.</p>
+                 </div>
+                 <div class="col-md-6">
+                    <h6 class="fw-bold mb-3 text-uppercase text-end" style="color: #000;">FORM SLIM STRAIGHT FIT</h6>
+                    <div class="table-responsive rounded border">
+                        <table class="table table-borderless table-striped table-hover text-center mb-0 align-middle">
+                            <thead class="text-white" style="background-color: #000;">
+                                <tr>
+                                    <th>Size</th>
+                                    <th>Chiều cao</th>
+                                    <th>Cân nặng</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td class="fw-bold">29</td><td>1m60 - 1m65</td><td>56kg - 60kg</td></tr>
+                                <tr><td class="fw-bold">30</td><td>1m60 - 1m70</td><td>61kg - 65kg</td></tr>
+                                <tr><td class="fw-bold">31</td><td>1m60 - 1m75</td><td>66kg - 70kg</td></tr>
+                                <tr><td class="fw-bold">32</td><td>1m65 - 1m80</td><td>71kg - 75kg</td></tr>
+                                <tr><td class="fw-bold">34</td><td>1m60 - 1m85</td><td>76kg - 85kg</td></tr>
+                                <tr><td class="fw-bold">36</td><td>1m71 - 1m85</td><td>86kg - 95kg</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                 </div>
+             </div>
+             
+             <div class="table-responsive border rounded">
+                <table class="table text-center table-bordered mb-0 align-middle">
+                    <thead class="text-white" style="background-color: #1a237e;">
+                        <tr>
+                            <th class="text-start ps-3" style="width: 25%;">Mô tả</th>
+                            <th>29</th>
+                            <th>30</th>
+                            <th>31</th>
+                            <th>32</th>
+                            <th>34</th>
+                            <th>36</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td class="text-start ps-3"><span class="badge rounded-circle bg-dark me-2">1</span> Vòng lưng</td><td>38.38</td><td>39.66</td><td>40.94</td><td>42.22</td><td>43.5</td><td>44.78</td></tr>
+                        <tr class="table-light"><td class="text-start ps-3"><span class="badge rounded-circle bg-dark me-2">2</span> Vòng mông</td><td>47.88</td><td>49.16</td><td>50.44</td><td>51.72</td><td>53</td><td>54.28</td></tr>
+                        <tr><td class="text-start ps-3"><span class="badge rounded-circle bg-dark me-2">3</span> Vòng đùi</td><td>29.44</td><td>30.08</td><td>30.72</td><td>31.36</td><td>32</td><td>32.64</td></tr>
+                        <tr class="table-light"><td class="text-start ps-3"><span class="badge rounded-circle bg-dark me-2">4</span> Rộng ống</td><td>17.72</td><td>18.04</td><td>18.36</td><td>18.68</td><td>19</td><td>19.32</td></tr>
+                        <tr><td class="text-start ps-3"><span class="badge rounded-circle bg-dark me-2">5</span> Dài quần</td><td>95.44</td><td>96.08</td><td>96.72</td><td>97.36</td><td>98</td><td>98.64</td></tr>
+                    </tbody>
+                </table>
+             </div>
+             <p class="text-end text-muted small mt-2 fst-italic">* Thông số size có độ sai số (±1)</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+@section Scripts {
+    <style>
+        /* Styles for custom tabs */
+        #productInfoTabs .nav-link {
+            transition: all 0.2s;
+        }
+        #productInfoTabs .nav-link.active {
+            color: #000 !important;
+            border-bottom-color: #000 !important;
+        }
+        #productInfoTabs .nav-link:hover:not(.active) {
+            color: #424242 !important;
+        }
+
+        /* Thêm Vào Giỏ - Default: White bg, dark text. Hover: Black bg, white text */
+        .btn-add-cart {
+            background-color: #fff;
+            color: #212529;
+            transition: all 0.2s ease-in-out;
+        }
+        .btn-add-cart:hover:not(:disabled) {
+            background-color: #000;
+            color: #fff;
+            border-color: #000;
+        }
+        .btn-add-cart:disabled {
+            background-color: #f1f1f1 !important;
+            color: #ccc !important;
+            border-color: #ccc !important;
+            cursor: not-allowed;
+        }
+
+        /* Mua Ngay - Base: Specific strong color. Hover: Lighten/opacity */
+        .btn-buy-now {
+            background-color: #0d2e57; /* Deep attractive blue as a 'distinct' contrast to B/W */
+            border-color: #0d2e57;
+            transition: all 0.2s ease-in-out;
+        }
+        .btn-buy-now:hover:not(:disabled) {
+            background-color: #f8f9fa; /* Light grey/white hover */
+            color: #0d2e57 !important;
+            border: 1px solid #0d2e57;
+        }
+        .btn-buy-now:disabled {
+             background-color: #c4ccce !important;
+             color: #6c757d !important;
+             border-color: #c4ccce !important;
+             cursor: not-allowed;
+        }
+
+        /* Wishlist Hover Effect */
+        .btn-wishlist-wrapper {
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+        }
+        .btn-wishlist-wrapper:hover {
+            background-color: #dc3545 !important;
+            border-color: #dc3545 !important;
+        }
+        .btn-wishlist-wrapper:hover .btn-wishlist-link {
+            color: #fff !important;
+        }
+
+        /* Size/Color buttons */
+        .size-btn {
+            min-width: 45px;
+        }
+    </style>
+    <script>
+        // Data injected from Server
+        const productId = @Model.Id;
+        // Data injected from Server, filtering out locked variants
+        const variantsData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ProductVariants?.Select(v => (object)new {
+            id = v.Id,
+            size = v.Size,
+            color = v.Color,
+            quantity = v.Quantity,
+            isLocked = v.IsLocked,
+            imageUrl = string.IsNullOrEmpty(v.ImageUrl) ? Model.ImageUrl : v.ImageUrl,
+            priceOverride = v.PriceOverride
+        }) ?? new List<object>()));
+
+        const variants = variantsData.filter(v => v.isLocked !== true);
+
+        const defaultMainImage = "@Model.ImageUrl";
+        let defaultTotalQuantity = @Model.Quantity;
+
+        // UI Elements
+        const sizeContainer = document.getElementById("sizeContainer");
+        const colorContainer = document.getElementById("colorContainer");
+        const stockDisplay = document.getElementById("stockDisplay");
+        const addToCartBtn = document.getElementById("addToCartBtn");
+        const mainImage = document.getElementById("mainImage");
+        const selectedSizeInput = document.getElementById("selectedSizeInput");
+        const selectedColorInput = document.getElementById("selectedColorInput");
+        const quantityInput = document.getElementById("quantityInput");
+
+        let currentSize = null;
+        let currentColor = null;
+        let currentMaxStock = 0;
+
+        function init() {
+            // Apply lock logic is no longer needed here as they are filtered out entirely
+
+            // Recalculate total valid stock
+            defaultTotalQuantity = variants.reduce((sum, v) => sum + v.quantity, 0);
+
+            if (variants.length === 0 || defaultTotalQuantity === 0) {
+                // If no variants, disable everything or show generic out of stock
+                sizeContainer.innerHTML = '<span class="text-disabled small text-danger"><i class="fas fa-exclamation-circle me-1"></i>Hết Hàng Toàn Bộ</span>';
+                colorContainer.innerHTML = '<span class="text-disabled small text-danger">Mẫu sản phẩm này tạm hết.</span>';
+                updateStockDisplay(0);
+                updateAddToCartButton(false);
+                return;
+            }
+
+            // Standardize size order logic: S, M, L, XL, XXL, then numbers, then Others
+            const sizeOrder = {"S": 1, "M": 2, "L": 3, "XL": 4, "XXL": 5};
+            
+            // Extract unique sizes
+            const uniqueSizes = [...new Set(variants.map(v => v.size))].sort((a, b) => {
+                let orderA = sizeOrder[a] || 99;
+                let orderB = sizeOrder[b] || 99;
+                if (orderA !== orderB) return orderA - orderB;
+                // If both are custom/numbers, try parse numeric or alphabetical
+                let numA = parseInt(a), numB = parseInt(b);
+                if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+                return a.localeCompare(b);
+            });
+
+            // Render Size buttons
+            uniqueSizes.forEach(size => {
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.className = "btn btn-outline-dark rounded-0 px-3 size-btn";
+                btn.textContent = size;
+                btn.dataset.size = size;
+                btn.onclick = () => selectSize(size);
+                sizeContainer.appendChild(btn);
+            });
+
+            // Restore from sessionStorage if navigating Back
+            let savedSize = sessionStorage.getItem('prefSize_' + productId);
+            let savedColor = sessionStorage.getItem('prefColor_' + productId);
+
+            if (savedSize && uniqueSizes.includes(savedSize)) {
+                selectSize(savedSize, savedColor);
+            } else if (uniqueSizes.length > 0) {
+                // Auto-select smallest size
+                selectSize(uniqueSizes[0]);
+            } else {
+                updateStockDisplay(defaultTotalQuantity);
+            }
+        }
+
+        function selectSize(size, overrideColor = null) {
+            // Toggle logic: if clicking already selected, deselect it
+            if (currentSize === size && !overrideColor) {
+                currentSize = null;
+                currentColor = null;
+                selectedSizeInput.value = "";
+                selectedColorInput.value = "";
+                sessionStorage.removeItem('prefSize_' + productId);
+                sessionStorage.removeItem('prefColor_' + productId);
+                
+                // Reset UI
+                document.querySelectorAll('.size-btn').forEach(b => {
+                    b.classList.remove('btn-dark', 'text-white');
+                    b.classList.add('btn-outline-dark');
+                });
+                
+                renderColors(null);
+                updateStockDisplay(defaultTotalQuantity);
+                updateMainImage(defaultMainImage);
+                updateAddToCartButton(false);
+                return;
+            }
+
+            currentSize = size;
+            selectedSizeInput.value = size;
+            sessionStorage.setItem('prefSize_' + productId, size);
+
+            // Update names in labels
+            document.getElementById('sizeNameDisplay').textContent = size || '';
+            document.getElementById('colorNameDisplay').textContent = '';
+
+            // Update UI for size selection
+            document.querySelectorAll('.size-btn').forEach(b => {
+                if (b.dataset.size === size) {
+                    b.classList.remove('btn-outline-dark', 'text-dark');
+                    b.classList.add('bg-dark', 'text-white', 'border-dark');
+                } else {
+                    b.classList.remove('bg-dark', 'text-white');
+                    b.classList.add('btn-outline-dark', 'text-dark');
+                }
+            });
+
+            renderColors(size);
+
+            // Calculate total stock for this size across all colors
+            const totalStockForSize = variants.filter(v => v.size === size).reduce((sum, v) => sum + v.quantity, 0);
+            updateStockDisplay(totalStockForSize);
+            
+            currentColor = null; // Auto-reset color when picking a new size
+            selectedColorInput.value = "";
+            updateMainImage(defaultMainImage); // revert to generic image until specific color chosen
+            updateAddToCartButton(false);
+            
+            // Auto-select color
+            if (overrideColor) {
+                const isValidColor = variants.some(v => v.size === size && v.color === overrideColor && v.quantity > 0);
+                if (isValidColor) {
+                    selectColor(overrideColor);
+                } else {
+                    autoSelectAvailableColor(size);
+                }
+            } else {
+                autoSelectAvailableColor(size);
+            }
+        }
+        
+        function autoSelectAvailableColor(size) {
+            const availableVariants = variants.filter(v => v.size === size && v.quantity > 0);
+            if (availableVariants.length > 0) {
+               selectColor(availableVariants[0].color);
+            }
+        }
+
+        function renderColors(size) {
+            colorContainer.innerHTML = ''; // clear existing
+            
+            if (!size) {
+                colorContainer.innerHTML = '<span class="text-muted small">Please select a size first</span>';
+                return;
+            }
+
+            const colorsForSize = variants.filter(v => v.size === size);
+
+            colorsForSize.forEach(v => {
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.className = "btn p-0 color-btn";
+                btn.style.width = "30px";
+                btn.style.height = "30px";
+                btn.style.borderRadius = "50%";
+                btn.style.backgroundColor = v.color;
+                btn.style.border = "2px solid #ddd";
+                if (v.quantity === 0) {
+                     btn.style.opacity = "0.3";
+                     btn.style.cursor = "not-allowed";
+                     btn.title = v.color + " (Hết hàng)";
+                } else {
+                     btn.title = v.color;
+                     btn.onclick = () => selectColor(v.color);
+                }
+                btn.dataset.color = v.color;
+                
+                // Add an outer ring container for styling purposes
+                const wrapper = document.createElement("div");
+                wrapper.className = "color-wrapper d-flex align-items-center justify-content-center";
+                wrapper.style.width = "36px";
+                wrapper.style.height = "36px";
+                wrapper.style.borderRadius = "50%";
+                wrapper.style.cursor = "pointer";
+                if (v.quantity > 0) wrapper.onclick = () => selectColor(v.color);
+                
+                wrapper.appendChild(btn);
+                colorContainer.appendChild(wrapper);
+            });
+        }
+
+        function selectColor(color) {
+            currentColor = color;
+            selectedColorInput.value = color;
+            sessionStorage.setItem('prefColor_' + productId, color);
+            
+            // Update name in label
+            document.getElementById('colorNameDisplay').textContent = color || '';
+
+            const targetVariant = variants.find(v => v.size === currentSize && v.color === color);
+
+            // Update UI for color selection (ring around selected color)
+            document.querySelectorAll('.color-wrapper').forEach(w => {
+                 const btn = w.querySelector('.color-btn');
+                 if (btn && btn.dataset.color === color) {
+                     w.style.border = "2px solid black";
+                 } else {
+                     w.style.border = "none";
+                 }
+            });
+
+            if (targetVariant) {
+                currentMaxStock = targetVariant.quantity;
+                updateStockDisplay(targetVariant.quantity);
+                updateMainImage(targetVariant.imageUrl);
+                updateAddToCartButton(targetVariant.quantity > 0);
+                
+                // Validate existing quantity against stock rules
+                let currentVal = parseInt(quantityInput.value) || 1;
+                if (currentVal > targetVariant.quantity && targetVariant.quantity > 0) {
+                    quantityInput.value = targetVariant.quantity;
+                } else if (targetVariant.quantity === 0) {
+                    quantityInput.value = 1;
+                }
+            } else {
+                currentMaxStock = 0;
+            }
+        }
+        
+        function changeQty(amount) {
+            if (!currentColor || !currentSize || currentMaxStock === 0) return;
+            
+            let val = parseInt(quantityInput.value) || 1;
+            val += amount;
+            
+            if (val < 1) val = 1;
+            if (val > currentMaxStock) val = currentMaxStock;
+            
+            quantityInput.value = val;
+            sessionStorage.setItem('prefQty_' + productId, val);
+        }
+
+        function updateStockDisplay(qty) {
+            const statusBadge = document.getElementById("stockStatusBadge");
+            if (stockDisplay) {
+                stockDisplay.innerHTML = `<i class="fas fa-box me-1"></i> Còn lại: ${qty} sản phẩm`;
+                if (qty === 0) {
+                     stockDisplay.classList.remove("bg-light", "text-dark");
+                     stockDisplay.classList.add("bg-danger", "text-white");
+                     if (statusBadge) {
+                         statusBadge.textContent = "Hết hàng";
+                         statusBadge.classList.remove("bg-success");
+                         statusBadge.classList.add("bg-danger");
+                     }
+                } else {
+                     stockDisplay.classList.remove("bg-danger", "text-white");
+                     stockDisplay.classList.add("bg-light", "text-dark");
+                     if (statusBadge) {
+                         statusBadge.textContent = "Còn hàng";
+                         statusBadge.classList.remove("bg-danger");
+                         statusBadge.classList.add("bg-success");
+                     }
+                }
+            }
+        }
+
+        function updateMainImage(url) {
+            if (mainImage && url) {
+                // Add a simple fade effect
+                if (mainImage.src.indexOf(url) === -1) {
+                    mainImage.style.opacity = '0.5';
+                    setTimeout(() => {
+                        mainImage.src = url;
+                        mainImage.style.opacity = '1';
+                    }, 150);
+                }
+            }
+        }
+
+        function updateAddToCartButton(canAdd) {
+            const btnBuyNow = document.querySelector('.btn-buy-now');
+            if (canAdd) {
+                addToCartBtn.disabled = false;
+                addToCartBtn.innerHTML = 'Thêm Vào Giỏ';
+                if(btnBuyNow) btnBuyNow.disabled = false;
+            } else {
+                addToCartBtn.disabled = true;
+                addToCartBtn.innerHTML = 'HẾT HÀNG';
+                if(btnBuyNow) btnBuyNow.disabled = true;
+            }
+        }
+
+        // Handle custom nav tab clicks changing border bottoms
+        document.querySelectorAll('#productInfoTabs .nav-link').forEach(tab => {
+            tab.addEventListener('click', function() {
+                // Reset all
+                document.querySelectorAll('#productInfoTabs .nav-link').forEach(t => {
+                    t.classList.remove('border-bottom', 'border-dark', 'border-2', 'text-dark');
+                    t.classList.add('text-secondary');
+                    t.style.borderBottomColor = 'transparent';
+                });
+                // Set active
+                this.classList.remove('text-secondary');
+                this.classList.add('border-bottom', 'border-dark', 'border-2', 'text-dark');
+            });
+        });
+
+        // Hook up pageshow event for back button logic in safari/firefox bfcache
+        window.addEventListener('pageshow', function(event) {
+             let savedQty = sessionStorage.getItem('prefQty_' + productId);
+             if (savedQty && quantityInput) {
+                 // Check if we have stock
+                 let max = currentMaxStock > 0 ? currentMaxStock : 99;
+                 let val = parseInt(savedQty) || 1;
+                 if (val > max) val = max;
+                 quantityInput.value = val;
+             }
+        });
+
+        // Run setup
+        document.addEventListener("DOMContentLoaded", init);
+    </script>
+}

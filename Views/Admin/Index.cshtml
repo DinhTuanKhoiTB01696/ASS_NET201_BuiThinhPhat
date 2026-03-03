@@ -1,0 +1,188 @@
+@{
+    ViewData["Title"] = "Dashboard";
+    Layout = "_AdminLayout";
+}
+
+<style>
+    .welcome-banner {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        border-radius: 16px;
+        padding: 2rem;
+        color: white;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.3);
+    }
+    
+    .welcome-banner::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: 300px;
+        background: radial-gradient(circle at center, rgba(59,130,246,0.15) 0%, transparent 70%);
+        pointer-events: none;
+    }
+
+    .stat-card-simple {
+        background: white;
+        border-radius: 16px;
+        padding: 1.5rem;
+        border: 1px solid rgba(0,0,0,0.05);
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        transition: all 0.3s;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card-simple:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 20px -5px rgba(0,0,0,0.1);
+    }
+    
+    .stat-card-simple.primary { border-bottom: 4px solid #3b82f6; }
+    .stat-card-simple.success { border-bottom: 4px solid #10b981; }
+    .stat-card-simple.warning { border-bottom: 4px solid #f59e0b; }
+    .stat-card-simple.info { border-bottom: 4px solid #06b6d4; }
+
+    .stat-icon-wrapper {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        margin-bottom: 1rem;
+    }
+
+    .bg-primary-soft { background: rgba(59,130,246,0.1); color: #3b82f6; }
+    .bg-success-soft { background: rgba(16,185,129,0.1); color: #10b981; }
+    .bg-warning-soft { background: rgba(245,158,11,0.1); color: #f59e0b; }
+    .bg-info-soft { background: rgba(6,182,212,0.1); color: #06b6d4; }
+</style>
+
+<!-- Welcome Banner -->
+<div class="welcome-banner animate-in">
+    <div class="position-relative z-1">
+        <h2 class="fw-bold mb-2 text-white">Dashboard Overview</h2>
+        <p class="text-white-50 mb-0">Welcome back! Here's what's happening with your store today.</p>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Revenue -->
+    <div class="col-md-3">
+        <div class="stat-card-simple success">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="text-muted text-uppercase fw-bold small mb-2">Total Revenue</div>
+                    <h3 class="fw-bold mb-0 text-dark">
+                        @if(ViewBag.Revenue != null) {
+                            @(((decimal)ViewBag.Revenue).ToString("N0")) <small class="text-muted fs-6">₫</small>
+                        } else {
+                           <span>0</span> <small class="text-muted fs-6">₫</small>
+                        }
+                    </h3>
+                </div>
+                <div class="stat-icon-wrapper bg-success-soft">
+                    <i class="fas fa-coins"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Orders -->
+    <div class="col-md-3">
+        <div class="stat-card-simple primary">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="text-muted text-uppercase fw-bold small mb-2">Total Orders</div>
+                    <h3 class="fw-bold mb-0 text-dark">@ViewBag.OrderCount</h3>
+                </div>
+                <div class="stat-icon-wrapper bg-primary-soft">
+                    <i class="fas fa-shopping-bag"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Products -->
+    <div class="col-md-3">
+        <div class="stat-card-simple warning">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="text-muted text-uppercase fw-bold small mb-2">Active Products</div>
+                    <h3 class="fw-bold mb-0 text-dark">@ViewBag.ProductCount</h3>
+                </div>
+                <div class="stat-icon-wrapper bg-warning-soft">
+                    <i class="fas fa-box"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customers -->
+    <div class="col-md-3">
+        <div class="stat-card-simple info">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="text-muted text-uppercase fw-bold small mb-2">Customers</div>
+                    <h3 class="fw-bold mb-0 text-dark">@ViewBag.UserCount</h3>
+                </div>
+                <div class="stat-icon-wrapper bg-info-soft">
+                    <i class="fas fa-users"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="glass-card h-100">
+            <div class="card-header border-0 bg-transparent pt-4 px-4 pb-0 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0"><i class="fas fa-rocket text-primary me-2"></i>Quick Actions</h5>
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <a href="/Admin/Statistics" class="btn btn-light w-100 p-3 text-start shadow-sm border h-100 d-flex align-items-center hover-up">
+                            <div class="bg-primary text-white rounded-circle p-3 me-3">
+                                <i class="fas fa-chart-pie fa-lg"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold text-dark">View Statistics</div>
+                                <div class="small text-muted">Detailed sales analysis</div>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-md-6">
+                        <a href="/Admin/Products" class="btn btn-light w-100 p-3 text-start shadow-sm border h-100 d-flex align-items-center hover-up">
+                            <div class="bg-success text-white rounded-circle p-3 me-3">
+                                <i class="fas fa-box-open fa-lg"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold text-dark">Manage Products</div>
+                                <div class="small text-muted">Add or edit inventory</div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="glass-card h-100 d-flex flex-column justify-content-center align-items-center p-4 text-center">
+             <div class="bg-light rounded-circle p-4 mb-3">
+                <i class="fas fa-chart-line fa-3x text-muted opacity-25"></i>
+             </div>
+             <h5 class="fw-bold text-muted">More features coming soon</h5>
+             <p class="small text-muted mb-0">Analytics and reports will be updated automatically.</p>
+        </div>
+    </div>
+</div>

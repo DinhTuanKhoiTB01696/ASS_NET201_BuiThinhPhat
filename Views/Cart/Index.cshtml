@@ -1,0 +1,164 @@
+@model List<Assignment_NET201.ViewModels.CartItem>
+
+@{
+    ViewData["Title"] = "Shopping Cart";
+}
+
+<div class="container mt-5 mb-5">
+    <div class="mb-3">
+        <partial name="_BackButton" />
+    </div>
+    <h2 class="fw-bold text-uppercase mb-4" style="font-family: 'Anton', sans-serif;">Shopping Cart</h2>
+
+    @if (TempData["Message"] != null)
+    {
+        <div class="alert alert-warning alert-dismissible fade show rounded-0" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i> @TempData["Message"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show rounded-0" role="alert">
+            <i class="fas fa-times-circle me-2"></i> @Html.Raw(TempData["Error"])
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (Model.Any())
+    {
+        <div class="row">
+            <div class="col-md-8">
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead class="table-light">
+                            <tr class="text-uppercase small fw-bold">
+                                <th style="width: 50%;">Product</th>
+                                <th style="width: 15%;">Price</th>
+                                <th style="width: 15%;">Quantity</th>
+                                <th style="width: 20%;" class="text-success">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <img src="@item.ImageUrl" alt="@item.ProductName" class="img-fluid me-3"
+                                                style="width: 80px; height: 100px; object-fit: cover;">
+                                            <div>
+                                                <h6 class="mb-1 text-uppercase fw-bold">@item.ProductName</h6>
+                                                 <p class="mb-0 small text-secondary">Size: @item.Size | Color: @item.Color</p>
+                                                 <a asp-action="RemoveFromCart" asp-route-productId="@item.ProductId"
+                                                     asp-route-size="@item.Size"
+                                                     asp-route-color="@item.Color"
+                                                     class="text-danger small text-decoration-underline">Remove</a>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>@item.Price.ToString("N0")</td>
+                                    <td>
+                                        <input type="number" class="form-control form-control-sm rounded-0 text-center"
+                                            value="@item.Quantity" style="width: 60px;" readonly>
+                                    </td>
+                                    <td class="fw-bold text-success">@item.Total.ToString("N0")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="bg-light p-4">
+                    <h5 class="fw-bold text-uppercase mb-4">Order Summary</h5>
+
+                    <!-- Voucher Section -->
+                    <div class="mb-4">
+                        <label class="small fw-bold text-uppercase d-block mb-2">Mã giảm giá</label>
+                        @if (Context.Session.GetString("AppliedVoucher") == null)
+                        {
+                            <form asp-action="ApplyVoucher" method="post" class="input-group">
+                                <input type="text" name="voucherCode" class="form-control rounded-0" placeholder="Nhập mã..." required>
+                                <button class="btn btn-dark rounded-0 px-3" type="submit">Áp dụng</button>
+                            </form>
+                        }
+                        else
+                        {
+                            <div class="d-flex justify-content-between align-items-center p-2 border bg-white">
+                                <span class="fw-bold text-success"><i class="fas fa-ticket-alt me-2"></i>@Context.Session.GetString("AppliedVoucher")</span>
+                                <a asp-action="RemoveVoucher" class="text-danger small">Gỡ mã</a>
+                            </div>
+                        }
+                        
+                        @if (TempData["VoucherError"] != null)
+                        {
+                            <div class="small text-danger mt-1">@TempData["VoucherError"]</div>
+                        }
+                        @if (TempData["VoucherMessage"] != null)
+                        {
+                            <div class="small text-success mt-1">@TempData["VoucherMessage"]</div>
+                        }
+                    </div>
+
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Subtotal</span>
+                        <span class="fw-bold">@Model.Sum(x => x.Total).ToString("N0") VND</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3 border-bottom pb-3">
+                        <span>Shipping</span>
+                        <span class="text-success">Free</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-4">
+                        <span class="fs-5 fw-bold text-uppercase text-success">Total</span>
+                        <span class="fs-5 fw-bold text-success">@Model.Sum(x => x.Total).ToString("N0") VND</span>
+                    </div>
+                    <a asp-action="Checkout" class="btn btn-dark w-100 rounded-0 py-3 text-uppercase fw-bold">Proceed to
+                        Checkout</a>
+                    <a asp-controller="Home" asp-action="Shop"
+                        class="btn btn-outline-dark w-100 rounded-0 py-3 mt-2 text-uppercase fw-bold">Continue Shopping</a>
+                </div>
+            </div>
+        </div>
+
+        @if (ViewBag.Suggestions != null && ((List<Assignment_NET201.Models.Product>)ViewBag.Suggestions).Any())
+        {
+            <div class="mt-5 pt-4 border-top">
+                <h4 class="fw-bold text-uppercase mb-4" style="font-family: 'Anton', sans-serif;">Gợi ý thêm cho bạn</h4>
+                <div class="row row-cols-1 row-cols-md-3 g-4">
+                    @foreach (var p in (List<Assignment_NET201.Models.Product>)ViewBag.Suggestions)
+                    {
+                        <div class="col">
+                            <div class="card h-100 border-0 shadow-sm rounded-0">
+                                <div class="row g-0">
+                                    <div class="col-4">
+                                        <img src="@p.ImageUrl" class="img-fluid rounded-0" alt="@p.Name" style="height: 120px; object-fit: cover;">
+                                    </div>
+                                    <div class="col-8">
+                                        <div class="card-body py-2">
+                                            <h6 class="card-title fw-bold mb-1 small">@p.Name</h6>
+                                            <p class="card-text text-danger fw-bold mb-2 small">@p.Price.ToString("N0") VND</p>
+                                            <a asp-action="AddToCart" asp-route-productId="@p.Id" class="btn btn-sm btn-dark rounded-0 px-3">Thêm ngay</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="text-center py-5">
+            <i class="fas fa-shopping-bag fa-3x text-secondary mb-3"></i>
+            <h4 class="fw-bold text-uppercase">Your cart is empty</h4>
+            <p class="text-secondary mb-4">Looks like you haven't added any items to your cart yet.</p>
+            <a asp-controller="Home" asp-action="Shop" class="btn btn-dark rounded-0 px-5 py-3 text-uppercase fw-bold">Start
+                Shopping</a>
+        </div>
+    }
+</div>

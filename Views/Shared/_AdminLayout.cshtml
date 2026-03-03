@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - ICONDENIM Admin</title>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <!-- Bootstrap & Icons -->
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-body);
+        }
+
+        /* Sidebar */
+        .admin-sidebar {
+            width: 280px;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+            background-color: #ffffff;
+            border-right: 1px solid rgba(0,0,0,0.05);
+            padding: 2rem 1.5rem;
+            box-shadow: 4px 0 24px rgba(0,0,0,0.02);
+        }
+
+        .admin-brand {
+            font-family: 'Anton', sans-serif;
+            font-size: 1.75rem;
+            color: #0f172a;
+            text-decoration: none;
+            letter-spacing: 1px;
+            display: block;
+            margin-bottom: 2.5rem;
+            text-align: center;
+            position: relative;
+        }
+        
+        .admin-brand::after {
+            content: 'ADMIN';
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.7rem;
+            font-family: 'Inter', sans-serif;
+            letter-spacing: 3px;
+            color: #94a3b8;
+            font-weight: 600;
+        }
+
+        .nav-link {
+            color: #64748b;
+            font-weight: 500;
+            padding: 0.9rem 1.25rem;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-bottom: 0.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-link:hover {
+            background-color: #f8fafc;
+            color: #3b82f6;
+            transform: translateX(4px);
+        }
+
+        .nav-link.active {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.25);
+        }
+
+        .nav-link i {
+            width: 24px;
+            margin-right: 0.75rem;
+            text-align: center;
+            font-size: 1.1rem;
+            transition: transform 0.3s;
+        }
+        
+        .nav-link:hover i {
+            transform: scale(1.1);
+        }
+
+        /* User Profile */
+        .user-profile {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 1rem;
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s;
+        }
+        
+        .user-profile:hover {
+            background: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border-color: #cbd5e1;
+        }
+
+        /* Main Content */
+        .admin-main {
+            margin-left: 280px;
+            padding: 2.5rem;
+            min-height: 100vh;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Sidebar -->
+    <aside class="admin-sidebar d-flex flex-column">
+        <a href="/" class="admin-brand">
+            ICONDENIM
+        </a>
+
+        <ul class="nav flex-column mb-auto mt-4">
+            <li class="nav-item">
+                <a href="/Admin"
+                    class="nav-link @(ViewContext.RouteData.Values["Action"]?.ToString() == "Index" ? "active" : "")">
+                    <i class="fas fa-chart-line"></i>
+                    Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/Admin/Statistics"
+                    class="nav-link @(ViewContext.RouteData.Values["Action"]?.ToString() == "Statistics" ? "active" : "")">
+                    <i class="fas fa-chart-pie"></i>
+                    Thống Kê
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/Admin/Products"
+                    class="nav-link @(ViewContext.RouteData.Values["Action"]?.ToString() == "Products" || ViewContext.RouteData.Values["Action"]?.ToString() == "CreateProduct" || ViewContext.RouteData.Values["Action"]?.ToString() == "EditProduct" ? "active" : "")">
+                    <i class="fas fa-box"></i>
+                    Products
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/Admin/Inventory"
+                    class="nav-link @(ViewContext.RouteData.Values["Action"]?.ToString() == "Inventory" || ViewContext.RouteData.Values["Action"]?.ToString() == "ProductVariants" || ViewContext.RouteData.Values["Action"]?.ToString() == "CreateVariant" || ViewContext.RouteData.Values["Action"]?.ToString() == "InventoryHistory" ? "active" : "")">
+                    <i class="fas fa-warehouse"></i>
+                    Inventory (Kho)
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/Admin/Orders"
+                    class="nav-link @(ViewContext.RouteData.Values["Action"]?.ToString() == "Orders" ? "active" : "")">
+                    <i class="fas fa-shopping-bag"></i>
+                    Orders
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/Admin/Vouchers"
+                    class="nav-link @(ViewContext.RouteData.Values["Action"]?.ToString() == "Vouchers" || ViewContext.RouteData.Values["Action"]?.ToString() == "CreateVoucher" ? "active" : "")">
+                    <i class="fas fa-tags"></i>
+                    Vouchers
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/Admin/Users"
+                    class="nav-link @(ViewContext.RouteData.Values["Action"]?.ToString() == "Users" ? "active" : "")">
+                    <i class="fas fa-users"></i>
+                    Users
+                </a>
+            </li>
+        </ul>
+
+        <div class="mt-auto pt-3">
+            <div class="user-profile mb-3">
+                <div class="d-flex align-items-center">
+                    <div class="bg-white border rounded-circle p-2 me-3 d-flex align-items-center justify-content-center shadow-sm" style="width: 40px; height: 40px;">
+                        <i class="fas fa-user-shield text-primary"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-dark" style="font-size: 0.9rem;">@User.Identity?.Name</div>
+                        <div class="text-secondary" style="font-size: 0.75rem; letter-spacing: 0.5px;">ADMINISTRATOR</div>
+                    </div>
+                </div>
+            </div>
+            <form class="w-100" asp-controller="Account" asp-action="Logout" method="post">
+                <button type="submit" class="btn btn-outline-danger w-100 btn-sm fw-bold" style="border-radius: 10px;">
+                    <i class="fas fa-sign-out-alt me-2"></i>Sign Out
+                </button>
+            </form>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="admin-main">
+        <div class="container-fluid p-0">
+            @if (ViewContext.RouteData.Values["Action"]?.ToString() != "Index")
+            {
+                <partial name="_BackButton" />
+            }
+            @RenderBody()
+        </div>
+    </main>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+
+</html>

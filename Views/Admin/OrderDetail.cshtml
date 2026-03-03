@@ -1,0 +1,183 @@
+@model Assignment_NET201.Models.Order
+
+@{
+    ViewData["Title"] = "Order Details";
+    Layout = "_AdminLayout";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-0">Order Detail <span class="text-muted small">#@Model.Id</span></h3>
+        <p class="text-muted small mb-0">Placed on @Model.OrderDate.ToString("dd MMM yyyy HH:mm")</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="Orders" class="btn btn-outline-dark">
+            <i class="fas fa-arrow-left me-2"></i>Back to Orders
+        </a>
+        <!-- Basic Status update could be added here -->
+    </div>
+</div>
+
+<div class="row">
+    <!-- Order Summary & Items -->
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white py-3">
+                <h5 class="mb-0 fw-bold">Order Items</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead class="bg-light small text-uppercase">
+                            <tr>
+                                <th class="ps-4">Product</th>
+                                <th>Price</th>
+                                <th>Quantity</th>
+                                <th class="text-end pe-4">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.OrderDetails)
+                            {
+                                <tr>
+                                    <td class="ps-4">
+                                        <div class="d-flex align-items-center">
+                                            @if (item.Product != null)
+                                            {
+                                                @if (!string.IsNullOrEmpty(item.Product.ImageUrl))
+                                                {
+                                                    <img src="@item.Product.ImageUrl" class="rounded me-3 border p-1" width="48" height="60" style="object-fit: cover;" />
+                                                }
+                                                 <div>
+                                                     <div class="fw-bold">@item.ProductName</div>
+                                                     <div class="small text-muted">Size: @item.Size | Color: @item.Color</div>
+                                                     <small class="text-muted">ID: @item.ProductId</small>
+                                                 </div>
+                                            }
+                                            else if (item.Combo != null)
+                                            {
+                                                <div>
+                                                    <div class="fw-bold">@item.Combo.Name (Combo)</div>
+                                                </div>
+                                            }
+                                        </div>
+                                    </td>
+                                    <td>@item.UnitPrice.ToString("N0") VND</td>
+                                    <td>@item.Quantity</td>
+                                    <td class="text-end pe-4 fw-bold">@((item.UnitPrice * item.Quantity).ToString("N0")) VND</td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot class="bg-light">
+                            <tr>
+                                <td colspan="3" class="text-end py-1">Subtotal:</td>
+                                <td class="text-end pe-4 py-1">@((Model.TotalAmount + Model.DiscountAmount).ToString("N0")) VND</td>
+                            </tr>
+                            @if (Model.DiscountAmount > 0)
+                            {
+                                <tr>
+                                    <td colspan="3" class="text-end py-1 text-danger">Discount:</td>
+                                    <td class="text-end pe-4 py-1 text-danger">- @Model.DiscountAmount.ToString("N0") VND</td>
+                                </tr>
+                            }
+                            <tr>
+                                <td colspan="3" class="text-end fw-bold py-3 fs-5">Grand Total:</td>
+                                <td class="text-end pe-4 fw-bold fs-5 py-3">@Model.TotalAmount.ToString("N0") VND</td>
+                            </tr>
+                            <tr class="table-info">
+                                <td colspan="3" class="text-end py-2">Points Earned from this order:</td>
+                                <td class="text-end pe-4 py-2 fw-bold">+@Model.PointsEarned points</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Details -->
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white py-3">
+                <h5 class="mb-0 fw-bold">Customer Info</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-4">
+                    <div class="bg-dark text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px;">
+                        <span class="fw-bold">@(Model.User?.FullName?.Substring(0, 1).ToUpper() ?? "U")</span>
+                    </div>
+                    <div>
+                        <div class="fw-bold fs-5">@Model.User?.FullName</div>
+                        <small class="text-muted">Customer since ...</small>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="text-muted small text-uppercase fw-bold d-block mb-1">Email Address</label>
+                    <div class="fw-medium"><i class="far fa-envelope me-2"></i>@Model.User?.Email</div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="text-muted small text-uppercase fw-bold d-block mb-1">Phone Number</label>
+                    <div class="fw-medium"><i class="fas fa-phone-alt me-2"></i>@(Model.User?.PhoneNumber ?? "Not provided")</div>
+                </div>
+
+                <hr class="my-4">
+
+                <div class="mb-3">
+                    <label class="text-muted small text-uppercase fw-bold d-block mb-1">Shipping Address</label>
+                    <div class="fw-medium">
+                        <i class="fas fa-map-marker-alt me-2"></i>@(Model.User?.Address ?? "No address on file")
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="text-muted small text-uppercase fw-bold d-block mb-2">Update Order Status</label>
+                    <form asp-action="UpdateOrderStatus" method="post" class="d-flex gap-2">
+                        <input type="hidden" name="orderId" value="@Model.Id" />
+                        <select name="status" class="form-select form-select-sm">
+                            <option value="Pending" selected="@(Model.Status == "Pending")">Pending</option>
+                            <option value="Shipping" selected="@(Model.Status == "Shipping")">Shipping</option>
+                            <option value="Delivered" selected="@(Model.Status == "Delivered")">Delivered</option>
+                            <option value="Cancelled" selected="@(Model.Status == "Cancelled")">Cancelled</option>
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-dark">Update</button>
+                    </form>
+                    @if (Model.Status == "Delivered")
+                    {
+                        <div class="small text-success mt-1"><i class="fas fa-check-circle me-1"></i> Points have been credited.</div>
+                    }
+                </div>
+
+                <div class="mb-0">
+                    <label class="text-muted small text-uppercase fw-bold d-block mb-1">Current Status</label>
+                    <div>
+                        @if (Model.Status == "Pending")
+                        {
+                            <span class="badge bg-warning text-dark"><i class="fas fa-clock me-1"></i> Pending</span>
+                        }
+                        else if (Model.Status == "Delivered")
+                        {
+                            <span class="badge bg-success text-white"><i class="fas fa-check me-1"></i> Delivered</span>
+                        }
+                        else if (Model.Status == "Cancelled")
+                        {
+                            <span class="badge bg-danger text-white"><i class="fas fa-times me-1"></i> Cancelled</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary text-white">@Model.Status</span>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <!-- Update Grand Total to show discounts in footer if needed -->
+    <script>
+        // Optional JS for status change confirmation
+    </script>
+}

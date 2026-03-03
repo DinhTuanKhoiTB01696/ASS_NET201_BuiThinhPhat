@@ -1,0 +1,59 @@
+@model IEnumerable<Assignment_NET201.Models.InventoryTransaction>
+@{
+    ViewData["Title"] = "Transaction History";
+    Layout = "_AdminLayout";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold mb-0">Stock Transaction History</h3>
+    <a asp-action="Inventory" class="btn btn-outline-dark">
+        <i class="fas fa-arrow-left me-2"></i>Back to Inventory
+    </a>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-4">Date</th>
+                        <th>Product</th>
+                        <th>Variant (Size/Color)</th>
+                        <th>Type</th>
+                        <th>Quantity</th>
+                        <th>Performed By</th>
+                        <th class="pe-4">Note</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var t in Model)
+                    {
+                        <tr>
+                            <td class="ps-4">@t.CreatedAt.ToString("g")</td>
+                            <td class="fw-bold">@t.ProductVariant.Product.Name</td>
+                            <td>@t.ProductVariant.Size / @t.ProductVariant.Color</td>
+                            <td>
+                                @if (t.Type == "Import")
+                                {
+                                    <span class="badge bg-success-subtle text-success">
+                                        <i class="fas fa-arrow-down me-1"></i> IMPORT
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger-subtle text-danger">
+                                        <i class="fas fa-arrow-up me-1"></i> EXPORT
+                                    </span>
+                                }
+                            </td>
+                            <td class="fw-bold">@t.Quantity</td>
+                            <td>@t.CreatedBy</td>
+                            <td class="pe-4 text-muted small">@t.Note</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

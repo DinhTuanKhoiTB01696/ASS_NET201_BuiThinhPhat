@@ -1,0 +1,186 @@
+@model Assignment_NET201.ViewModels.RegisterViewModel
+
+@{
+    ViewData["Title"] = "Register";
+}
+
+<div class="container mt-5 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="text-center mb-4">
+                <h2 class="fw-bold text-uppercase" style="font-family: 'Anton', sans-serif;">Create Account</h2>
+                <p class="text-secondary">Join us for exclusive offers and faster checkout</p>
+            </div>
+
+            <form asp-action="Register" method="post">
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <div class="form-floating mb-3">
+                    <input asp-for="FullName" class="form-control rounded-0" placeholder="Full Name" />
+                    <label asp-for="FullName">Full Name</label>
+                    <span asp-validation-for="FullName" class="text-danger small"></span>
+                </div>
+
+                <div class="form-floating mb-3">
+                    <input asp-for="Email" class="form-control rounded-0" placeholder="name@example.com" />
+                    <label asp-for="Email">Email address</label>
+                    <span asp-validation-for="Email" class="text-danger small"></span>
+                </div>
+
+                <div class="form-floating mb-3">
+                    <input asp-for="PhoneNumber" class="form-control rounded-0" placeholder="Phone Number" />
+                    <label asp-for="PhoneNumber">Phone Number</label>
+                    <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-uppercase">Tỉnh / Thành phố</label>
+                    <select id="province" class="form-select rounded-0">
+                        <option value="">Chọn Tỉnh / Thành phố</option>
+                    </select>
+                </div>
+
+                <div class="row g-2 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-uppercase">Quận / Huyện</label>
+                        <select id="district" class="form-select rounded-0" disabled>
+                            <option value="">Chọn Quận / Huyện</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-uppercase">Phường / Xã</label>
+                        <select id="ward" class="form-select rounded-0" disabled>
+                            <option value="">Chọn Phường / Xã</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-floating mb-3">
+                    <input id="streetAddress" class="form-control rounded-0" placeholder="Số nhà, tên đường" />
+                    <label for="streetAddress">Số nhà, tên đường</label>
+                </div>
+
+                <!-- Hidden field to store the combined address -->
+                <input type="hidden" asp-for="Address" id="fullAddress" />
+                <span asp-validation-for="Address" class="text-danger small"></span>
+
+                <div class="row g-2 mb-3">
+                    <div class="col-md-6">
+                        <div class="form-floating password-container">
+                            <input asp-for="Password" class="form-control rounded-0" placeholder="Password" />
+                            <label asp-for="Password">Password</label>
+                            <i class="far fa-eye password-toggle" id="togglePassword"></i>
+                        </div>
+                        <span asp-validation-for="Password" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-floating password-container">
+                            <input asp-for="ConfirmPassword" class="form-control rounded-0"
+                                placeholder="Confirm Password" />
+                            <label asp-for="ConfirmPassword">Confirm Password</label>
+                            <i class="far fa-eye password-toggle" id="toggleConfirmPassword"></i>
+                        </div>
+                        <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
+                    </div>
+                </div>
+
+                <script>
+                    const setupToggle = (toggleId, inputName) => {
+                        const toggle = document.getElementById(toggleId);
+                        const input = document.querySelector(`input[name="${inputName}"]`);
+                        toggle.addEventListener('click', function() {
+                            const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+                            input.setAttribute('type', type);
+                            this.classList.toggle('fa-eye');
+                            this.classList.toggle('fa-eye-slash');
+                        });
+                    };
+
+                    setupToggle('togglePassword', 'Password');
+                    setupToggle('toggleConfirmPassword', 'ConfirmPassword');
+                </script>
+
+                <div class="form-check mb-4">
+                    <input class="form-check-input rounded-0" type="checkbox" id="terms" required>
+                    <label class="form-check-label small text-secondary" for="terms">
+                        I agree to the <a href="#" class="text-dark text-decoration-underline">Terms of Service</a> and
+                        <a href="#" class="text-dark text-decoration-underline">Privacy Policy</a>
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-dark w-100 rounded-0 text-uppercase fw-bold py-3 mb-3">Create
+                    Account</button>
+            </form>
+
+            <div class="text-center">
+                <p class="small">Already have an account? <a asp-action="Login"
+                        class="text-black fw-bold text-decoration-underline">Sign In</a></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        $(document).ready(function () {
+            const provinceSelect = $('#province');
+            const districtSelect = $('#district');
+            const wardSelect = $('#ward');
+            const streetInput = $('#streetAddress');
+            const fullAddressInput = $('#fullAddress');
+
+            // Fetch provinces
+            fetch('https://provinces.open-api.vn/api/p/')
+                .then(res => res.json())
+                .then(data => {
+                    data.forEach(p => provinceSelect.append(new Option(p.name, p.code)));
+                });
+
+            provinceSelect.on('change', function () {
+                const code = $(this).val();
+                districtSelect.empty().append(new Option("Chọn Quận / Huyện", "")).prop('disabled', !code);
+                wardSelect.empty().append(new Option("Chọn Phường / Xã", "")).prop('disabled', true);
+                if (code) {
+                    fetch(`https://provinces.open-api.vn/api/p/${code}?depth=2`)
+                        .then(res => res.json())
+                        .then(data => {
+                            data.districts.forEach(d => districtSelect.append(new Option(d.name, d.code)));
+                        });
+                }
+                combineAddress();
+            });
+
+            districtSelect.on('change', function () {
+                const code = $(this).val();
+                wardSelect.empty().append(new Option("Chọn Phường / Xã", "")).prop('disabled', !code);
+                if (code) {
+                    fetch(`https://provinces.open-api.vn/api/d/${code}?depth=2`)
+                        .then(res => res.json())
+                        .then(data => {
+                            data.wards.forEach(w => wardSelect.append(new Option(w.name, w.code)));
+                        });
+                }
+                combineAddress();
+            });
+
+            wardSelect.on('change', combineAddress);
+            streetInput.on('input', combineAddress);
+
+            function combineAddress() {
+                const p = provinceSelect.find("option:selected").text();
+                const d = districtSelect.find("option:selected").text();
+                const w = wardSelect.find("option:selected").text();
+                const s = streetInput.val();
+
+                let full = "";
+                if (s) full += s;
+                if (w && w !== "Chọn Phường / Xã") full += (full ? ", " : "") + w;
+                if (d && d !== "Chọn Quận / Huyện") full += (full ? ", " : "") + d;
+                if (p && p !== "Chọn Tỉnh / Thành phố") full += (full ? ", " : "") + p;
+
+                fullAddressInput.val(full);
+            }
+        });
+    </script>
+}

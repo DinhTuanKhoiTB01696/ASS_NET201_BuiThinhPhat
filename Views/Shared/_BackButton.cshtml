@@ -1,0 +1,13 @@
+<button onclick="goBack()" class="btn btn-outline-secondary btn-sm rounded-pill mb-3 shadow-sm" type="button" style="transition: all 0.2s;">
+    <i class="fas fa-arrow-left me-1"></i> Quay lại
+</button>
+
+<script>
+    function goBack() {
+        if (window.history.length > 1) {
+            window.history.back();
+        } else {
+            window.location.href = '/Admin/Inventory'; 
+        }
+    }
+</script>

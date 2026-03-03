@@ -1,0 +1,92 @@
+@model List<Assignment_NET201.ViewModels.WishlistItem>
+@{
+    ViewData["Title"] = "Wishlist";
+}
+
+<div class="container mt-5 mb-5">
+    <h2 class="fw-bold text-uppercase mb-4" style="font-family: 'Anton', sans-serif;">My Wishlist</h2>
+
+    @if (Model == null || !Model.Any())
+    {
+        <div class="text-center py-5 border">
+            <i class="far fa-heart fa-3x text-secondary mb-3"></i>
+            <p class="text-secondary">Your wishlist is empty.</p>
+            <a asp-controller="Home" asp-action="Shop" class="btn btn-dark rounded-0 px-4">Continue Shopping</a>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="border-0">Product</th>
+                        <th class="border-0">Price</th>
+                        <th class="border-0 text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        var wishlistProducts = ViewBag.WishlistProducts as Dictionary<int, Assignment_NET201.Models.Product>;
+                        var realProduct = wishlistProducts != null && wishlistProducts.ContainsKey(item.ProductId) ? wishlistProducts[item.ProductId] : null;
+                        
+                        bool isDiscontinued = realProduct == null || !realProduct.IsActive;
+                        int totalStock = realProduct != null ? (realProduct.ProductVariants?.Any() == true ? realProduct.ProductVariants.Where(v => !v.IsLocked).Sum(v => v.Quantity) : realProduct.Quantity) : 0;
+                        bool isOutOfStock = !isDiscontinued && totalStock <= 0;
+                        
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <img src="@item.ImageUrl" alt="@item.ProductName" style="width: 80px; height: 100px; object-fit: cover;" class="me-3">
+                                    <div>
+                                        <h6 class="mb-0 fw-bold">@item.ProductName</h6>
+                                        <small class="text-muted d-block mb-1">Added on @item.DateAdded.ToShortDateString()</small>
+                                        
+                                        @if (isDiscontinued)
+                                        {
+                                            <p class="text-secondary small mt-1 mb-0 fst-italic">Đây là sản phẩm Limited đã ngừng hoạt động. 😭</p>
+                                        }
+                                        else if (isOutOfStock)
+                                        {
+                                            <p class="text-danger small mt-1 mb-0 fw-bold">Ôi không sản phẩm đã bán chạy hết rồi, chúc bạn may mắn vào lần sau nhé.</p>
+                                        }
+                                        else
+                                        {
+                                            <p class="text-warning small mt-1 mb-0 fw-bold"><i class="fas fa-bolt text-warning"></i> Sản phẩm vẫn còn hãy nhanh chân mua ngayyy!!!</p>
+                                        }
+                                    </div>
+                                </div>
+                            </td>
+                            <td>@item.Price.ToString("N0") VND</td>
+                            <td class="text-end">
+                                @if (isDiscontinued || isOutOfStock)
+                                {
+                                    <button class="btn btn-dark btn-sm rounded-0 me-2" disabled>
+                                        <i class="fas fa-eye"></i> Xem chi tiết
+                                    </button>
+                                }
+                                else
+                                {
+                                    <a asp-controller="Home" asp-action="ProductDetail" asp-route-id="@item.ProductId" class="btn btn-dark btn-sm rounded-0 me-2">
+                                        <i class="fas fa-eye"></i> Xem chi tiết
+                                    </a>
+                                }
+                                <a asp-action="RemoveFromWishlist" asp-route-productId="@item.ProductId" class="btn btn-outline-danger btn-sm rounded-0">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot class="border-top-0">
+                    <tr class="fw-bold fs-5">
+                        <td class="text-end">Total Value:</td>
+                        <td>@Model.Sum(x => x.Price).ToString("N0") VND</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    }
+</div>

@@ -1,0 +1,79 @@
+@model Assignment_NET201.ViewModels.LoginViewModel
+
+@{
+    ViewData["Title"] = "Login";
+}
+
+<div class="container mt-5 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="text-center mb-4">
+                <h2 class="fw-bold text-uppercase" style="font-family: 'Anton', sans-serif;">Welcome Back</h2>
+                <p class="text-secondary">Please sign in to your account</p>
+            </div>
+
+            <form asp-action="Login" method="post">
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <div class="form-floating mb-3">
+                    <input asp-for="Email" class="form-control rounded-0" placeholder="name@example.com" />
+                    <label asp-for="Email">Email address</label>
+                    <span asp-validation-for="Email" class="text-danger small"></span>
+                </div>
+
+                <div class="form-floating mb-3 password-container">
+                    <input asp-for="Password" class="form-control rounded-0" placeholder="Password" />
+                    <label asp-for="Password">Password</label>
+                    <i class="far fa-eye password-toggle" id="togglePassword"></i>
+                    <span asp-validation-for="Password" class="text-danger small"></span>
+                </div>
+
+                <script>
+                    document.getElementById('togglePassword').addEventListener('click', function () {
+                        const passwordInput = document.querySelector('input[name="Password"]');
+                        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                        passwordInput.setAttribute('type', type);
+                        this.classList.toggle('fa-eye');
+                        this.classList.toggle('fa-eye-slash');
+                    });
+                </script>
+
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div class="form-check">
+                        <input class="form-check-input rounded-0" asp-for="RememberMe" />
+                        <label class="form-check-label" asp-for="RememberMe">
+                            @Html.DisplayNameFor(m => m.RememberMe)
+                        </label>
+                    </div>
+                    <a href="#" class="text-decoration-none text-secondary small">Forgot password?</a>
+                </div>
+
+                <button type="submit" class="btn btn-dark w-100 rounded-0 text-uppercase fw-bold py-3 mb-3">Sign
+                    In</button>
+            </form>
+
+            <div class="text-center mb-3">
+                <span class="text-secondary small">Or sign in with</span>
+            </div>
+
+            <div class="d-grid gap-2 mb-4">
+                <form asp-action="ExternalLogin" asp-route-returnUrl="@Context.Request.Query["returnUrl"]"
+                    method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" name="provider" value="Google" class="btn btn-outline-dark rounded-0 w-100">
+                        <i class="fab fa-google me-2"></i> Google
+                    </button>
+                </form>
+            </div>
+
+            <div class="text-center">
+                <p class="small">Don't have an account? <a asp-action="Register"
+                        class="text-black fw-bold text-decoration-underline">Create account</a></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

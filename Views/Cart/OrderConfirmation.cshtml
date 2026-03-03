@@ -1,0 +1,19 @@
+@model int
+
+@{
+    ViewData["Title"] = "Order Confirmed";
+}
+
+<div class="container mt-5 mb-5 text-center">
+    <div class="py-5">
+        <i class="far fa-check-circle text-success display-1 mb-4"></i>
+        <h1 class="fw-bold text-uppercase mb-3" style="font-family: 'Anton', sans-serif;">Thank You!</h1>
+        <p class="lead mb-4">Your order <strong>#@Model</strong> has been placed successfully.</p>
+        <p class="text-secondary mb-5">We have sent a confirmation email to your registered email address.</p>
+        
+        <div class="d-flex justify-content-center gap-3">
+             <a asp-controller="Account" asp-action="MyOrders" class="btn btn-outline-dark rounded-0 px-4 text-uppercase fw-bold">View Order</a>
+             <a asp-controller="Home" asp-action="Index" class="btn btn-dark rounded-0 px-4 text-uppercase fw-bold">Continue Shopping</a>
+        </div>
+    </div>
+</div>
