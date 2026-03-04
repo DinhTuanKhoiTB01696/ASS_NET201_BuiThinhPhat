@@ -121,4 +121,18 @@ public class HomeController : Controller
     {
         return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
     }
+
+    // AJAX endpoint: get product variants for Cart variant picker
+    public async Task<IActionResult> GetProductVariants(int id)
+    {
+        var variants = await _context.ProductVariants
+            .Where(v => v.ProductId == id && v.Quantity > 0 && !v.IsLocked)
+            .Select(v => new { v.Size, v.Color, v.Quantity, v.PriceOverride })
+            .ToListAsync();
+
+        var sizes = variants.Select(v => v.Size).Distinct().OrderBy(s => s).ToList();
+        var colors = variants.Select(v => v.Color).Distinct().OrderBy(c => c).ToList();
+
+        return Json(new { sizes, colors, variants });
+    }
 }

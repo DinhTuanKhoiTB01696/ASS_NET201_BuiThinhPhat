@@ -1,164 +1,453 @@
 @model List<Assignment_NET201.ViewModels.CartItem>
 
 @{
-    ViewData["Title"] = "Shopping Cart";
+    ViewData["Title"] = "Giỏ Hàng";
 }
 
-<div class="container mt-5 mb-5">
-    <div class="mb-3">
-        <partial name="_BackButton" />
-    </div>
-    <h2 class="fw-bold text-uppercase mb-4" style="font-family: 'Anton', sans-serif;">Shopping Cart</h2>
+<style>
+    .cart-page { background: #f5f5f5; min-height: 100vh; padding: 24px 0 48px; }
 
+    /* ===== CART HEADER ===== */
+    .cart-header-row {
+        background: #fff;
+        border-radius: 8px;
+        padding: 14px 20px;
+        display: grid;
+        grid-template-columns: 3fr 1fr 1.2fr 1fr 0.6fr;
+        font-size: 0.82rem; color: #888; font-weight: 500;
+        margin-bottom: 12px;
+    }
+
+    /* ===== CART ITEM CARD ===== */
+    .cart-item-card {
+        background: #fff; border-radius: 8px;
+        padding: 18px 20px; margin-bottom: 10px;
+        display: grid;
+        grid-template-columns: 3fr 1fr 1.2fr 1fr 0.6fr;
+        align-items: center; gap: 12px;
+        transition: box-shadow 0.2s;
+    }
+    .cart-item-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.07); }
+
+    .cart-item-img {
+        width: 80px; height: 90px; object-fit: cover;
+        border-radius: 6px; border: 1px solid #f0f0f0; flex-shrink: 0;
+    }
+    .cart-item-name { font-weight: 600; font-size: 0.92rem; color: #222; line-height: 1.4; }
+    .cart-item-variant { font-size: 0.78rem; color: #888; margin-top: 4px; }
+    .btn-change-variant {
+        font-size: 0.75rem; color: #1a94ff; background: none; border: 1px solid #1a94ff;
+        border-radius: 4px; padding: 2px 10px; cursor: pointer; margin-top: 6px;
+        transition: all 0.2s;
+    }
+    .btn-change-variant:hover { background: #1a94ff; color: #fff; }
+    .btn-remove {
+        font-size: 0.75rem; color: #888; background: none; border: none;
+        cursor: pointer; padding: 2px 0; margin-top: 4px; display: block;
+        transition: color 0.2s;
+    }
+    .btn-remove:hover { color: #ee4d2d; }
+
+    /* Price */
+    .cart-price { font-size: 0.95rem; color: #222; font-weight: 500; }
+
+    /* ===== QUANTITY CONTROL (Shopee style) ===== */
+    .qty-control {
+        display: inline-flex; align-items: center;
+        border: 1px solid #ddd; border-radius: 4px; overflow: hidden;
+    }
+    .qty-btn {
+        width: 34px; height: 34px; border: none; background: #f7f7f7;
+        font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+        color: #444; font-weight: 600; transition: background 0.15s;
+    }
+    .qty-btn:hover:not(:disabled) { background: #e8e8e8; }
+    .qty-btn:disabled { color: #ccc; cursor: not-allowed; }
+    .qty-input {
+        width: 44px; height: 34px; border: none; border-left: 1px solid #ddd; border-right: 1px solid #ddd;
+        text-align: center; font-size: 0.88rem; font-weight: 600;
+        -moz-appearance: textfield; outline: none;
+    }
+    .qty-input::-webkit-inner-spin-button,
+    .qty-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+    /* Total */
+    .cart-total-price { font-size: 1rem; font-weight: 700; color: #ee4d2d; }
+
+    /* ===== STICKY SUMMARY ===== */
+    .order-summary-card {
+        background: #fff; border-radius: 8px; padding: 20px;
+        position: sticky; top: 80px;
+    }
+    .summary-title { font-size: 1rem; font-weight: 700; color: #222; padding-bottom: 14px; border-bottom: 1px solid #f0f0f0; margin-bottom: 14px; }
+    .summary-row { display: flex; justify-content: space-between; font-size: 0.88rem; margin-bottom: 10px; }
+    .summary-row.total { font-size: 1.05rem; font-weight: 700; color: #ee4d2d; border-top: 1px dashed #e0e0e0; padding-top: 12px; margin-top: 4px; }
+
+    /* Voucher */
+    .voucher-input { border: 1px solid #ddd; border-radius: 6px 0 0 6px; padding: 8px 12px; font-size: 0.85rem; flex: 1; outline: none; }
+    .voucher-input:focus { border-color: #ee4d2d; }
+    .btn-apply-voucher { background: #ee4d2d; color: #fff; border: none; border-radius: 0 6px 6px 0; padding: 8px 16px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+    .btn-apply-voucher:hover { background: #d73c1e; }
+
+    /* Checkout button */
+    .btn-checkout {
+        display: block; width: 100%; background: #ee4d2d; color: #fff; border: none;
+        border-radius: 6px; padding: 14px; font-size: 0.95rem; font-weight: 700;
+        letter-spacing: 0.5px; cursor: pointer; text-align: center; text-decoration: none;
+        transition: background 0.2s, transform 0.15s;
+        margin-top: 16px;
+    }
+    .btn-checkout:hover { background: #d73c1e; color: #fff; transform: translateY(-1px); }
+
+    /* Empty cart */
+    .empty-cart { background: #fff; border-radius: 8px; padding: 80px 20px; text-align: center; }
+
+    /* ===== VARIANT MODAL ===== */
+    .variant-modal .modal-content { border-radius: 12px; border: none; }
+    .variant-modal .modal-header { border-bottom: 1px solid #f0f0f0; padding: 16px 20px; }
+    .variant-modal .modal-title { font-size: 1rem; font-weight: 700; }
+    .variant-section-title { font-size: 0.78rem; color: #888; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+    .variant-chip {
+        display: inline-flex; align-items: center;
+        border: 1.5px solid #ddd; border-radius: 6px;
+        padding: 6px 14px; font-size: 0.82rem; font-weight: 500;
+        cursor: pointer; margin: 4px; transition: all 0.18s; background: #fff; color: #444;
+    }
+    .variant-chip:hover { border-color: #ee4d2d; color: #ee4d2d; }
+    .variant-chip.selected { border-color: #ee4d2d; background: #fff5f3; color: #ee4d2d; font-weight: 700; }
+    .variant-chip.disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
+    .btn-confirm-variant {
+        background: #ee4d2d; color: #fff; border: none; border-radius: 6px;
+        padding: 11px 32px; font-weight: 700; font-size: 0.9rem; cursor: pointer;
+        transition: background 0.2s;
+    }
+    .btn-confirm-variant:hover { background: #d73c1e; }
+</style>
+
+<div class="cart-page">
+<div class="container" style="max-width:1100px;">
+
+    <!-- Alerts -->
     @if (TempData["Message"] != null)
     {
-        <div class="alert alert-warning alert-dismissible fade show rounded-0" role="alert">
-            <i class="fas fa-exclamation-triangle me-2"></i> @TempData["Message"]
+        <div class="alert alert-warning alert-dismissible fade show rounded-3 mb-3">
+            <i class="fas fa-exclamation-triangle me-2"></i>@TempData["Message"]
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     }
-    
     @if (TempData["Error"] != null)
     {
-        <div class="alert alert-danger alert-dismissible fade show rounded-0" role="alert">
-            <i class="fas fa-times-circle me-2"></i> @Html.Raw(TempData["Error"])
+        <div class="alert alert-danger alert-dismissible fade show rounded-3 mb-3">
+            <i class="fas fa-times-circle me-2"></i>@Html.Raw(TempData["Error"])
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["VoucherError"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show rounded-3 mb-3">
+            <i class="fas fa-ticket-alt me-2"></i>@TempData["VoucherError"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["VoucherMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show rounded-3 mb-3">
+            <i class="fas fa-ticket-alt me-2"></i>@TempData["VoucherMessage"]
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     }
 
     @if (Model.Any())
     {
-        <div class="row">
-            <div class="col-md-8">
-                <div class="table-responsive">
-                    <table class="table align-middle">
-                        <thead class="table-light">
-                            <tr class="text-uppercase small fw-bold">
-                                <th style="width: 50%;">Product</th>
-                                <th style="width: 15%;">Price</th>
-                                <th style="width: 15%;">Quantity</th>
-                                <th style="width: 20%;" class="text-success">Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var item in Model)
-                            {
-                                <tr>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <img src="@item.ImageUrl" alt="@item.ProductName" class="img-fluid me-3"
-                                                style="width: 80px; height: 100px; object-fit: cover;">
-                                            <div>
-                                                <h6 class="mb-1 text-uppercase fw-bold">@item.ProductName</h6>
-                                                 <p class="mb-0 small text-secondary">Size: @item.Size | Color: @item.Color</p>
-                                                 <a asp-action="RemoveFromCart" asp-route-productId="@item.ProductId"
-                                                     asp-route-size="@item.Size"
-                                                     asp-route-color="@item.Color"
-                                                     class="text-danger small text-decoration-underline">Remove</a>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>@item.Price.ToString("N0")</td>
-                                    <td>
-                                        <input type="number" class="form-control form-control-sm rounded-0 text-center"
-                                            value="@item.Quantity" style="width: 60px;" readonly>
-                                    </td>
-                                    <td class="fw-bold text-success">@item.Total.ToString("N0")</td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
+        <div class="row g-3">
+            <!-- LEFT: Cart items -->
+            <div class="col-lg-8">
+                <!-- Header -->
+                <div class="cart-header-row d-none d-md-grid">
+                    <div>Sản Phẩm</div>
+                    <div class="text-center">Đơn Giá</div>
+                    <div class="text-center">Số Lượng</div>
+                    <div class="text-center">Số Tiền</div>
+                    <div class="text-center">Thao Tác</div>
                 </div>
-            </div>
 
-            <div class="col-md-4">
-                <div class="bg-light p-4">
-                    <h5 class="fw-bold text-uppercase mb-4">Order Summary</h5>
+                <!-- Items -->
+                @foreach (var item in Model)
+                {
+                    <div class="cart-item-card" id="item-@item.ProductId-@item.Size-@item.Color">
 
-                    <!-- Voucher Section -->
-                    <div class="mb-4">
-                        <label class="small fw-bold text-uppercase d-block mb-2">Mã giảm giá</label>
-                        @if (Context.Session.GetString("AppliedVoucher") == null)
-                        {
-                            <form asp-action="ApplyVoucher" method="post" class="input-group">
-                                <input type="text" name="voucherCode" class="form-control rounded-0" placeholder="Nhập mã..." required>
-                                <button class="btn btn-dark rounded-0 px-3" type="submit">Áp dụng</button>
-                            </form>
-                        }
-                        else
-                        {
-                            <div class="d-flex justify-content-between align-items-center p-2 border bg-white">
-                                <span class="fw-bold text-success"><i class="fas fa-ticket-alt me-2"></i>@Context.Session.GetString("AppliedVoucher")</span>
-                                <a asp-action="RemoveVoucher" class="text-danger small">Gỡ mã</a>
-                            </div>
-                        }
-                        
-                        @if (TempData["VoucherError"] != null)
-                        {
-                            <div class="small text-danger mt-1">@TempData["VoucherError"]</div>
-                        }
-                        @if (TempData["VoucherMessage"] != null)
-                        {
-                            <div class="small text-success mt-1">@TempData["VoucherMessage"]</div>
-                        }
-                    </div>
-
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>Subtotal</span>
-                        <span class="fw-bold">@Model.Sum(x => x.Total).ToString("N0") VND</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-3 border-bottom pb-3">
-                        <span>Shipping</span>
-                        <span class="text-success">Free</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-4">
-                        <span class="fs-5 fw-bold text-uppercase text-success">Total</span>
-                        <span class="fs-5 fw-bold text-success">@Model.Sum(x => x.Total).ToString("N0") VND</span>
-                    </div>
-                    <a asp-action="Checkout" class="btn btn-dark w-100 rounded-0 py-3 text-uppercase fw-bold">Proceed to
-                        Checkout</a>
-                    <a asp-controller="Home" asp-action="Shop"
-                        class="btn btn-outline-dark w-100 rounded-0 py-3 mt-2 text-uppercase fw-bold">Continue Shopping</a>
-                </div>
-            </div>
-        </div>
-
-        @if (ViewBag.Suggestions != null && ((List<Assignment_NET201.Models.Product>)ViewBag.Suggestions).Any())
-        {
-            <div class="mt-5 pt-4 border-top">
-                <h4 class="fw-bold text-uppercase mb-4" style="font-family: 'Anton', sans-serif;">Gợi ý thêm cho bạn</h4>
-                <div class="row row-cols-1 row-cols-md-3 g-4">
-                    @foreach (var p in (List<Assignment_NET201.Models.Product>)ViewBag.Suggestions)
-                    {
-                        <div class="col">
-                            <div class="card h-100 border-0 shadow-sm rounded-0">
-                                <div class="row g-0">
-                                    <div class="col-4">
-                                        <img src="@p.ImageUrl" class="img-fluid rounded-0" alt="@p.Name" style="height: 120px; object-fit: cover;">
-                                    </div>
-                                    <div class="col-8">
-                                        <div class="card-body py-2">
-                                            <h6 class="card-title fw-bold mb-1 small">@p.Name</h6>
-                                            <p class="card-text text-danger fw-bold mb-2 small">@p.Price.ToString("N0") VND</p>
-                                            <a asp-action="AddToCart" asp-route-productId="@p.Id" class="btn btn-sm btn-dark rounded-0 px-3">Thêm ngay</a>
-                                        </div>
-                                    </div>
+                        <!-- Product info -->
+                        <div class="d-flex align-items-start gap-3">
+                            <img src="@item.ImageUrl" alt="@item.ProductName" class="cart-item-img">
+                            <div>
+                                <div class="cart-item-name">@item.ProductName</div>
+                                <div class="cart-item-variant">
+                                    Phân loại: @item.Size · @item.Color
                                 </div>
+                                <button class="btn-change-variant"
+                                    onclick="openVariantPicker(@item.ProductId, '@item.Size', '@item.Color', @item.Quantity)">
+                                    <i class="fas fa-edit me-1"></i>Thay đổi
+                                </button>
+                                <a href="/Cart/RemoveFromCart?productId=@item.ProductId&size=@item.Size&color=@Uri.EscapeDataString(item.Color)"
+                                   class="btn-remove">
+                                    <i class="fas fa-trash-alt me-1"></i>Xóa
+                                </a>
                             </div>
                         </div>
-                    }
-                </div>
+
+                        <!-- Price -->
+                        <div class="cart-price text-center">@item.Price.ToString("N0")<br><small class="text-muted" style="font-size:0.7rem;">VND</small></div>
+
+                        <!-- Quantity control -->
+                        <div class="d-flex justify-content-center">
+                            <div class="qty-control">
+                                <button class="qty-btn" onclick="changeQty(this, @item.ProductId, '@item.Size', '@item.Color', -1)"
+                                    @(item.Quantity <= 1 ? "disabled" : "")>−</button>
+                                <input type="number" class="qty-input" value="@item.Quantity" min="1"
+                                    onchange="setQty(this, @item.ProductId, '@item.Size', '@item.Color')">
+                                <button class="qty-btn" onclick="changeQty(this, @item.ProductId, '@item.Size', '@item.Color', 1)">+</button>
+                            </div>
+                        </div>
+
+                        <!-- Total -->
+                        <div class="cart-total-price text-center" id="total-@item.ProductId-@item.Size-@item.Color">
+                            @item.Total.ToString("N0")
+                        </div>
+
+                        <!-- Delete -->
+                        <div class="text-center">
+                            <a href="/Cart/RemoveFromCart?productId=@item.ProductId&size=@item.Size&color=@Uri.EscapeDataString(item.Color)"
+                               title="Xóa" style="color:#aaa;font-size:1.1rem;text-decoration:none;">
+                                <i class="fas fa-times"></i>
+                            </a>
+                        </div>
+                    </div>
+                }
             </div>
-        }
+
+            <!-- RIGHT: Order summary -->
+            <div class="col-lg-4">
+                <div class="order-summary-card">
+                    <div class="summary-title">
+                        <i class="fas fa-receipt me-2" style="color:#ee4d2d;"></i>Tóm tắt đơn hàng
+                    </div>
+
+                    <!-- Voucher -->
+                    @if (Context.Session.GetString("AppliedVoucher") == null)
+                    {
+                        <div class="mb-3">
+                            <div style="font-size:0.8rem;color:#555;font-weight:600;margin-bottom:7px;">
+                                <i class="fas fa-ticket-alt me-1" style="color:#ee4d2d;"></i>Mã giảm giá
+                            </div>
+                            <form asp-action="ApplyVoucher" method="post" class="d-flex">
+                                <input type="text" name="voucherCode" class="voucher-input" placeholder="Nhập mã voucher..." required>
+                                <button type="submit" class="btn-apply-voucher">Áp dụng</button>
+                            </form>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="mb-3 d-flex align-items-center justify-content-between p-2 rounded-2" style="background:#fff5f3;border:1px dashed #ee4d2d;">
+                            <span style="font-size:0.85rem;font-weight:700;color:#ee4d2d;">
+                                <i class="fas fa-ticket-alt me-2"></i>@Context.Session.GetString("AppliedVoucher")
+                            </span>
+                            <a asp-action="RemoveVoucher" style="font-size:0.78rem;color:#888;">Gỡ</a>
+                        </div>
+                    }
+
+                    <div class="summary-row">
+                        <span>Tạm tính (@Model.Count sản phẩm)</span>
+                        <span class="fw-600">@Model.Sum(x => x.Total).ToString("N0") VND</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Phí vận chuyển</span>
+                        <span style="color:#27ae60;font-weight:600;">Miễn phí</span>
+                    </div>
+                    <div class="summary-row total">
+                        <span>Tổng cộng</span>
+                        <span>@Model.Sum(x => x.Total).ToString("N0") VND</span>
+                    </div>
+
+                    <a asp-action="Checkout" class="btn-checkout">
+                        <i class="fas fa-lock me-2"></i>Mua Hàng (@Model.Count)
+                    </a>
+                    <a asp-controller="Home" asp-action="Shop"
+                       style="display:block;text-align:center;margin-top:12px;font-size:0.82rem;color:#888;text-decoration:none;">
+                        <i class="fas fa-arrow-left me-1"></i>Tiếp tục mua sắm
+                    </a>
+                </div>
+
+                <!-- Suggestions -->
+                @if (ViewBag.Suggestions != null && ((List<Assignment_NET201.Models.Product>)ViewBag.Suggestions).Any())
+                {
+                    <div class="mt-3 p-3 bg-white rounded-3">
+                        <div style="font-size:0.82rem;font-weight:700;color:#222;margin-bottom:12px;">
+                            <i class="fas fa-bolt me-1" style="color:#ee4d2d;"></i>Gợi ý cho bạn
+                        </div>
+                        @foreach (var p in (List<Assignment_NET201.Models.Product>)ViewBag.Suggestions)
+                        {
+                            <div class="d-flex align-items-center gap-2 mb-2 pb-2" style="border-bottom:1px solid #f5f5f5;">
+                                <img src="@p.ImageUrl" style="width:48px;height:54px;object-fit:cover;border-radius:6px;flex-shrink:0;">
+                                <div class="flex-grow-1" style="min-width:0;">
+                                    <div style="font-size:0.78rem;font-weight:600;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">@p.Name</div>
+                                    <div style="font-size:0.82rem;color:#ee4d2d;font-weight:700;">@p.Price.ToString("N0") VND</div>
+                                </div>
+                                <a href="/Cart/AddToCart?productId=@p.Id"
+                                   style="font-size:0.72rem;white-space:nowrap;background:#ee4d2d;color:#fff;padding:4px 10px;border-radius:4px;text-decoration:none;">
+                                    + Thêm
+                                </a>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
     }
     else
     {
-        <div class="text-center py-5">
-            <i class="fas fa-shopping-bag fa-3x text-secondary mb-3"></i>
-            <h4 class="fw-bold text-uppercase">Your cart is empty</h4>
-            <p class="text-secondary mb-4">Looks like you haven't added any items to your cart yet.</p>
-            <a asp-controller="Home" asp-action="Shop" class="btn btn-dark rounded-0 px-5 py-3 text-uppercase fw-bold">Start
-                Shopping</a>
+        <div class="empty-cart">
+            <i class="fas fa-shopping-cart fa-4x mb-4" style="color:#e0e0e0;"></i>
+            <h5 class="fw-bold mb-2">Giỏ hàng của bạn còn trống</h5>
+            <p class="text-muted mb-4" style="font-size:0.9rem;">Hãy khám phá và thêm sản phẩm vào giỏ hàng!</p>
+            <a asp-controller="Home" asp-action="Shop"
+               style="background:#ee4d2d;color:#fff;padding:12px 36px;border-radius:6px;font-weight:700;text-decoration:none;font-size:0.9rem;">
+                <i class="fas fa-store me-2"></i>Mua Sắm Ngay
+            </a>
         </div>
     }
+
 </div>
+</div>
+
+<!-- ===== VARIANT PICKER MODAL ===== -->
+<div class="modal fade variant-modal" id="variantModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:420px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title">Thay đổi phân loại hàng</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body px-4 pb-4" id="variantModalBody">
+                <div class="text-center py-4"><i class="fas fa-spinner fa-spin fa-2x text-muted"></i></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+// ===== Quantity Controls =====
+function changeQty(btn, productId, size, color, delta) {
+    const row = btn.closest('.qty-control');
+    const input = row.querySelector('.qty-input');
+    let val = parseInt(input.value) + delta;
+    if (val < 1) val = 1;
+    input.value = val;
+    submitQtyChange(productId, size, color, val);
+}
+
+function setQty(input, productId, size, color) {
+    let val = parseInt(input.value);
+    if (isNaN(val) || val < 1) val = 1;
+    input.value = val;
+    submitQtyChange(productId, size, color, val);
+}
+
+function submitQtyChange(productId, size, color, qty) {
+    window.location.href = `/Cart/AddToCart?productId=${productId}&quantity=${qty}&size=${encodeURIComponent(size)}&color=${encodeURIComponent(color)}`;
+}
+
+// ===== Variant Picker =====
+let currentProductId, currentOldSize, currentOldColor, currentOldQty;
+let selectedSize = '', selectedColor = '';
+
+function openVariantPicker(productId, oldSize, oldColor, oldQty) {
+    currentProductId = productId;
+    currentOldSize   = oldSize;
+    currentOldColor  = oldColor;
+    currentOldQty    = oldQty;
+    selectedSize     = oldSize;
+    selectedColor    = oldColor;
+
+    const modal = new bootstrap.Modal(document.getElementById('variantModal'));
+    document.getElementById('variantModalBody').innerHTML =
+        '<div class="text-center py-4"><i class="fas fa-spinner fa-spin fa-2x text-muted"></i></div>';
+    modal.show();
+
+    fetch(`/Home/GetProductVariants?id=${productId}`)
+        .then(r => r.json())
+        .then(data => renderVariantPicker(data))
+        .catch(() => {
+            document.getElementById('variantModalBody').innerHTML =
+                '<p class="text-danger text-center">Không thể tải dữ liệu phân loại.</p>';
+        });
+}
+
+function renderVariantPicker(data) {
+    const { sizes, colors, variants } = data;
+    let html = '';
+
+    if (sizes.length > 0) {
+        html += `<div class="variant-section-title">Chọn Size</div><div class="mb-4">`;
+        sizes.forEach(s => {
+            const avail = variants.some(v => v.size === s);
+            html += `<button class="variant-chip ${!avail ? 'disabled' : ''} ${s === selectedSize ? 'selected' : ''}"
+                        onclick="selectSize('${s}')" id="size-${s}">${s}</button>`;
+        });
+        html += `</div>`;
+    }
+
+    if (colors.length > 0) {
+        html += `<div class="variant-section-title">Chọn Màu</div><div class="mb-4">`;
+        colors.forEach(c => {
+            const avail = variants.some(v => v.color === c);
+            html += `<button class="variant-chip ${!avail ? 'disabled' : ''} ${c === selectedColor ? 'selected' : ''}"
+                        onclick="selectColor('${c}')" id="color-${encodeURIComponent(c)}">${c}</button>`;
+        });
+        html += `</div>`;
+    }
+
+    if (sizes.length === 0 && colors.length === 0) {
+        html = '<p class="text-muted text-center py-3">Sản phẩm này không có phân loại để thay đổi.</p>';
+    }
+
+    html += `<div class="d-flex justify-content-end gap-2 pt-2">
+        <button class="btn btn-outline-secondary rounded-pill px-4" onclick="closeVariantModal()">Trở lại</button>
+        <button class="btn-confirm-variant rounded-pill px-4" onclick="confirmVariant()">Xác nhận</button>
+    </div>`;
+
+    document.getElementById('variantModalBody').innerHTML = html;
+}
+
+function selectSize(s) {
+    selectedSize = s;
+    document.querySelectorAll('[id^="size-"]').forEach(el => el.classList.remove('selected'));
+    const el = document.getElementById('size-' + s);
+    if (el) el.classList.add('selected');
+}
+
+function selectColor(c) {
+    selectedColor = c;
+    document.querySelectorAll('[id^="color-"]').forEach(el => el.classList.remove('selected'));
+    const el = document.getElementById('color-' + encodeURIComponent(c));
+    if (el) el.classList.add('selected');
+}
+
+function confirmVariant() {
+    if (!selectedSize || !selectedColor) {
+        alert('Vui lòng chọn đầy đủ size và màu sắc!');
+        return;
+    }
+    closeVariantModal();
+    // Remove old item first, then add new
+    fetch(`/Cart/RemoveFromCart?productId=${currentProductId}&size=${encodeURIComponent(currentOldSize)}&color=${encodeURIComponent(currentOldColor)}`)
+        .then(() => {
+            window.location.href = `/Cart/AddToCart?productId=${currentProductId}&quantity=${currentOldQty}&size=${encodeURIComponent(selectedSize)}&color=${encodeURIComponent(selectedColor)}`;
+        });
+}
+
+function closeVariantModal() {
+    bootstrap.Modal.getInstance(document.getElementById('variantModal'))?.hide();
+}
+</script>
+}
